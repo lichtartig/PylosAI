@@ -11,3 +11,5 @@ to a neural network. """
 # stones that I can lift to the next level
 # stones that the opponent can lift to the next level
 # stones that I can take out of the game after completing a square
+
+# TODO Implement the encoder relative to the current player no matter it's color.
