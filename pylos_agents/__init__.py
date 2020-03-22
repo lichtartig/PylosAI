@@ -1,0 +1,1 @@
+""" This function contains different bots to play pylos. As a baseline it also contains a random playing bot. """
