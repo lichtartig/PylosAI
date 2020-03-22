@@ -11,36 +11,26 @@ state = GameState.new_game()
 # decide which agents play
 Player1 = Human()
 Player2 = Human()
-
 # assign colors randomly
-colors = {}
-if random.randrange(2) == 0:
-    # white
-    colors[1] = Player1
-    colors[-1] = Player2
-else:
-    colors[1] = Player2
-    colors[-1] = Player1
+game_agents = [Player1, Player2]
+random.shuffle(game_agents)
+colors = dict(zip([1,-1], game_agents))
 
 # play the game
 while state.has_won() == False:
     player = colors[state.current_player.value]
     next_move = player.next_move(state)
     if next_move.is_resign:
-        if state.current_player == Player.white:
-            print("White resigns.")
-        else:
-            print("Black resigns.")
-
-        # append this to hold the convention that the last game state is by the winning player
-        the_game.append(GameState(board=state.board, current_player=state.current_player.next_player))
         break
-
     the_game.append(state)
     state = state.apply_move(next_move)
 
 print("\n\nThe game is over!")
-if the_game[-1].current_player == Player.white:
+if state.current_player == Player.white and state.has_won():
     print("White won the game!")
-else:
+elif state.has_won():
     print("Black won the game!")
+elif state.current_player == Player.white:
+    print("White resigned.\nBlack won the game!")
+else:
+    print("Black resigned.\nWhite won the game!")
