@@ -48,13 +48,13 @@ class GameState():
     def is_valid_move(self, move):
         """ This function checks if a given move is allowed. It is a wrapper for the private functions below."""
         # If stones_to_recover is larger than zero, the only allowed moves are recover or pass
-        if self.stones_to_recover > 0 and move.is_recover is False and move.is_pass:
+        if self.stones_to_recover > 0 and move.is_recover == False and move.is_pass:
             return False
         elif self.stones_to_recover == 0 and (move.is_recover or move.is_pass):
             return False
 
         # Check if the new position is free and has support
-        if move.new_position != None and (self._get_value(move.new_position) != 0 or self._has_support(move.new_position) is False):
+        if move.new_position != None and (self._get_value(move.new_position) != 0 or self._has_support(move.new_position) == False):
             return False
 
         # Check if a stone may be taken out or if it supports stones above it
@@ -67,11 +67,11 @@ class GameState():
 
         # Make sure to check if a move is legal taking into account that taking out the stone at the current position
         # might reduce the number of legal positions on the layer above.
-        if move.is_raise and move.current_position is in self._supporting_stones(move.new_position):
+        if move.is_raise and move.current_position in self._supporting_stones(move.new_position):
             return False
 
         # If the player has no stones left to place, he has to pass
-        if self._has_stones_left() == 0 and move.is_pass is False:
+        if self._has_stones_left() == 0 and move.is_pass == False:
             return False
 
     def has_won(self):
@@ -128,7 +128,7 @@ class GameState():
         else:
             ret = []
             if x > 0:
-                ret.append((z+1, x-1, y))\
+                ret.append((z+1, x-1, y))
                 if y > 0:
                     ret.append((z+1, x-1, y-1))
             if x < 3 - z:
@@ -149,9 +149,9 @@ class GameState():
 
 class Move():
     """ This class represents all possible moves a player can make. """
-    def __init__(self, new_position=None, current_position=None, is_raise=False, is_recover=False, is_pass=False):
+    def __init__(self, new_position=None, current_position=None, is_raise=False, is_recover=False, is_pass=False, is_resign=False):
         assert is_raise + is_recover + is_pass <= 1
-        if is_recover is False and is_pass is False:
+        if is_recover == False and is_pass == False and is_resign == False:
             assert type(new_position) is type((0,))
         # This is not elif, b/c of the raise move which passes both if loops
         if is_raise or is_recover:
@@ -162,6 +162,7 @@ class Move():
         self.is_raise = is_raise
         self.is_recover = is_recover
         self.is_pass = is_pass
+        self.is_resign = is_resign
 
     @classmethod
     def place_stone(self, new_position):
@@ -187,6 +188,10 @@ class Move():
     def pass_move(self):
         """ This allows for the case that a player only wants to take out one stone after completing a square. """
         return Move(is_pass=True)
+
+    @classmethod
+    def resign(self):
+        return Move(is_resign=True)
 
 
 class Player(enum.Enum):
