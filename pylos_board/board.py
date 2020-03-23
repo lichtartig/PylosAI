@@ -18,11 +18,11 @@ class GameState():
             new_board = self.board
             z, x, y = move.current_position
             new_board[z][x,y] = 0
-            if move.stones_to_recover > 0:
+            if self.stones_to_recover > 0:
                 next_player = self.current_player
             else:
                 next_player = self.current_player.next_player
-            return GameState(board=new_board, current_player=next_player, stones_to_recover=moves.stones_to_recover-1)
+            return GameState(board=new_board, current_player=next_player, stones_to_recover=self.stones_to_recover-1)
 
         elif move.is_raise:
             new_board = self.board
@@ -53,12 +53,24 @@ class GameState():
         elif self.stones_to_recover == 0 and (move.is_recover or move.is_pass):
             return False
 
+        # check if new position is on grid
+        if move.new_position != None and self._is_on_grid(move.new_position) is False:
+            return False
+
+        # check if current position is on grid
+        if move.current_position != None and self._is_on_grid(move.current_position) is False:
+            return False
+
         # Check if the new position is free and has support
-        if move.new_position != None and (self._get_value(move.new_position) != 0 or self._has_support(move.new_position) == False):
+        if move.new_position != None and (self.get_value(move.new_position) != 0 or self._has_support(move.new_position) == False):
             return False
 
         # Check if a stone may be taken out or if it supports stones above it
         if move.current_position != None and self._stone_is_support(move.current_position):
+            return False
+
+        # Check if the stone to be taken out is of the current players color
+        if move.current_position != None and self.get_value(move.current_position) != self.current_player.value:
             return False
 
         # If the move raises a stone check if the layer is higher.
@@ -74,6 +86,8 @@ class GameState():
         if self._has_stones_left() == 0 and move.is_pass == False:
             return False
 
+        return True
+
     def has_won(self):
         """ This function returns True if the player has won. """
         return self.board[3][0,0] == self.current_player.value
@@ -81,23 +95,24 @@ class GameState():
     def _stone_is_support(self, position):
         """ This function checks whether a stone at a position given as a 3-tuple (layer, x-coord., y-coord.) is
         supporting stones in a layer above it. """
-        list_of_pos_values = map(lambda x: self._get_value(x) != 0, self._stones_on_top(position))
+        print("stones on top: ", self._stones_on_top(position))
+        list_of_pos_values = map(lambda x: self.get_value(x) != 0, self._stones_on_top(position))
         return any(list_of_pos_values)
 
     def _has_support(self, position):
         """ This function checks whether a position has supporting stones in the layer below it. """
         # get list of coordinates of supporting positions, then check component-wise if non-empty
-        list_of_pos_values = map(lambda x: self._get_value(x) != 0, self._supporting_stones(position))
+        list_of_pos_values = map(lambda x: self.get_value(x) != 0, self._supporting_stones(position))
         return all(list_of_pos_values)
 
     def _has_stones_left(self):
         """ Check if there are stones left to place for this player. """
         stones_in_layer = lambda x: (x == self.current_player.value).sum()
-        return sum(map(stones_in_layer, self.board)) < 15
+        return sum(map(stones_in_layer, self.board)) < 16
 
     def _completes_square(self, position):
         """ Checks whether a given completes a square. """
-        my_color = lambda x: self._get_value(x) == self.current_player.value
+        my_color = lambda x: self.get_value(x) == self.current_player.value
         z, x, y = position
         squares = [[(z, x+1, y), (z, x, y+1), (z, x+1, y+1)],
                    [(z, x, y+1), (z, x-1, y), (z, x-1, y+1)],
@@ -123,21 +138,29 @@ class GameState():
     def _stones_on_top(self, position):
         """ Given a position, this returns a list of the coordinates on top of it. """
         z, x, y = position
-        if z == 3:
-            return []
-        else:
-            ret = []
-            if x > 0:
+        ret = []
+        if z < 3:
+            if 0 < x and 0 < y:
+                ret.append((z+1, x-1, y-1))
+            if 0 < x and y < 3-z:
                 ret.append((z+1, x-1, y))
-                if y > 0:
-                    ret.append((z+1, x-1, y-1))
-            if x < 3 - z:
+            if x < 3-z and 0 < y:
                 ret.append((z+1, x, y-1))
-                if y < 3 - z:
-                    ret.append((z+1, x, y))
-            return ret
+            if x < 3-z and y < 3-z:
+                ret.append((z+1, x, y))
 
-    def _get_value(self, position):
+        return ret
+
+    def _is_on_grid(self, position):
+        if position[0] < 0 or 3 < position[0]:
+            return False
+        if position[1] < 0 or 3-position[0] < position[1]:
+            return False
+        if position[2] < 0 or 3-position[0] < position[2]:
+            return False
+        return True
+
+    def get_value(self, position):
         """ Given a position this function returns the value at that position (-1: black, 0: nothing, 1: white) """
         return self.board[position[0]][position[1], position[2]]
 
