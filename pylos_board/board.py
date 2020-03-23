@@ -95,7 +95,6 @@ class GameState():
     def _stone_is_support(self, position):
         """ This function checks whether a stone at a position given as a 3-tuple (layer, x-coord., y-coord.) is
         supporting stones in a layer above it. """
-        print("stones on top: ", self._stones_on_top(position))
         list_of_pos_values = map(lambda x: self.get_value(x) != 0, self._stones_on_top(position))
         return any(list_of_pos_values)
 

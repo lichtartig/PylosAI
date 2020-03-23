@@ -1,6 +1,7 @@
 """ This implements a human player as an agent to unify the framework. """
 from pylos_agents.base import Agent
-from pylos_board.board import Move, Player
+from pylos_board.board import Move
+from pylos_board.utilities import print_board
 
 class Human(Agent):
     def __init__(self):
@@ -8,7 +9,7 @@ class Human(Agent):
         self.color_dict = {1:"white", -1:"black"}
 
     def move_list(self, game_state):
-        self._print_board(game_state)
+        print_board(game_state)
         print("It's your turn, ", self.name, "(", self.color_dict[game_state.current_player.value], ")!")
         if game_state.stones_to_recover == 1:
             print("You may recover a stone from the board.")
@@ -25,22 +26,6 @@ class Human(Agent):
             move = self._interprete_turn(game_state, turn)
 
         return [move]
-
-    def _print_board(self, game_state):
-        """ This function prints out the current board position. """
-        b = game_state.board
-        c = {1: '⬤', 0: '+', -1: '◯'}
-
-        # this lambda turns one line of a numpy array into a string to print
-        line_to_string = lambda y: "\t".join(map(lambda x: c[x], y))
-        # build the output string
-        output = ""
-        for i in range(4):
-            for j in range(4-i):
-                output += line_to_string(b[j][i]) + ' \t\t'
-            output += '\n'
-
-        print(output)
 
     def _interprete_turn(self, game_state, turn):
         """ This function turns a string provided by the user into a Move-object. """

@@ -2,6 +2,7 @@
 import random
 from pylos_board.board import GameState, Player
 from pylos_agents.human import Human
+from pylos_agents.random_agent import SemiRandom
 
 # this list will contain a list of game states at the end of the game
 the_game = []
@@ -10,7 +11,7 @@ state = GameState.new_game()
 
 # decide which agents play
 Player1 = Human()
-Player2 = Human()
+Player2 = SemiRandom() # Human()
 # assign colors randomly
 game_agents = [Player1, Player2]
 random.shuffle(game_agents)
