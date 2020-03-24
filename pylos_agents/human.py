@@ -1,7 +1,6 @@
 """ This implements a human player as an agent to unify the framework. """
 from pylos_agents.base import Agent
 from pylos_board.board import Move
-from pylos_board.utilities import print_board
 
 class Human(Agent):
     def __init__(self):
@@ -9,7 +8,6 @@ class Human(Agent):
         self.color_dict = {1:"white", -1:"black"}
 
     def move_list(self, game_state):
-        print_board(game_state)
         print("It's your turn, ", self.name, "(", self.color_dict[game_state.current_player.value], ")!")
         if game_state.stones_to_recover == 1:
             print("You may recover a stone from the board.")

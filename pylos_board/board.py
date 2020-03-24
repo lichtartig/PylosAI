@@ -30,7 +30,7 @@ class GameState():
             new_board[z][x, y] = 0
             z, x, y = move.new_position
             new_board[z][x, y] = self.current_player.value
-            if self._completes_square(move.new_position):
+            if self.completes_square(move.new_position):
                 return GameState(board=new_board, current_player=self.current_player, stones_to_recover=2)
             else:
                 return GameState(board=new_board, current_player=self.current_player.next_player)
@@ -39,7 +39,7 @@ class GameState():
             new_board = self.board
             z, x, y = move.new_position
             new_board[z][x, y] = self.current_player.value
-            if self._completes_square(move.new_position):
+            if self.completes_square(move.new_position):
                 return GameState(board=new_board, current_player=self.current_player, stones_to_recover=2)
             else:
                 return GameState(board=new_board, current_player=self.current_player.next_player)
@@ -66,7 +66,7 @@ class GameState():
             return False
 
         # Check if a stone may be taken out or if it supports stones above it
-        if move.current_position != None and self._stone_is_support(move.current_position):
+        if move.current_position != None and self.is_support(move.current_position):
             return False
 
         # Check if the stone to be taken out is of the current players color
@@ -92,7 +92,7 @@ class GameState():
         """ This function returns True if the player has won. """
         return self.board[3][0,0] == self.current_player.value
 
-    def _stone_is_support(self, position):
+    def is_support(self, position):
         """ This function checks whether a stone at a position given as a 3-tuple (layer, x-coord., y-coord.) is
         supporting stones in a layer above it. """
         list_of_pos_values = map(lambda x: self.get_value(x) != 0, self._stones_on_top(position))
@@ -109,7 +109,7 @@ class GameState():
         stones_in_layer = lambda x: (x == self.current_player.value).sum()
         return sum(map(stones_in_layer, self.board)) < 16
 
-    def _completes_square(self, position):
+    def completes_square(self, position):
         """ Checks whether a given completes a square. """
         my_color = lambda x: self.get_value(x) == self.current_player.value
         z, x, y = position
@@ -164,7 +164,7 @@ class GameState():
         return self.board[position[0]][position[1], position[2]]
 
     @classmethod
-    def new_game(self):
+    def new_game(cls):
         """ This returns a new GameState object corresponding to an empty board. """
         board = [np.zeros((4,4)), np.zeros((3,3)), np.zeros((2,2)), np.zeros((1,1))]
         return GameState(board=board, current_player=Player.white, stones_to_recover=0)
@@ -187,19 +187,19 @@ class Move():
         self.is_resign = is_resign
 
     @classmethod
-    def place_stone(self, new_position):
+    def place_stone(cls, new_position):
         """ This function performs the standard move of placing a stone of the current players color at the indicated
         position given in the form of a 3-tuple that indicates (layer, x-coord., y-coord.) """
         return Move(new_position=new_position)
 
     @classmethod
-    def raise_stone(self, current_position, new_position):
+    def raise_stone(cls, current_position, new_position):
         """ This function lets the current player raise a stone from a lower layer to a higher one.
         Both positions are given as 3-tuples (layer, x-coord., y-coord.)."""
         return Move(new_position=new_position, current_position=current_position, is_raise=True)
 
     @classmethod
-    def recover_stone(self, current_position):
+    def recover_stone(cls, current_position):
         """ This function lets the current player recover stones after completing a colored 2x2 square of the same color.
         It checks if the player is allowed to recover a stone and also if the stone it wants to recover supports stones
         in higher layers.
@@ -207,12 +207,12 @@ class Move():
         return Move(current_position=current_position, is_recover=True)
 
     @classmethod
-    def pass_move(self):
+    def pass_move(cls):
         """ This allows for the case that a player only wants to take out one stone after completing a square. """
         return Move(is_pass=True)
 
     @classmethod
-    def resign(self):
+    def resign(cls):
         return Move(is_resign=True)
 
 
@@ -222,5 +222,5 @@ class Player(enum.Enum):
     black = -1
 
     @property
-    def next_player(self):
-        return Player.black if self == Player.white else Player.white
+    def next_player(cls):
+        return Player.black if cls == Player.white else Player.white
