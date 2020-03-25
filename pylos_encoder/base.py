@@ -39,17 +39,17 @@ class Encoder():
     @classmethod
     def _square_completion(cls, game_state, player):
         """ This function returns an array that is 1 on all fields that complete a square for the player. """
-        # get players stones per layer and turn it into a cubic array
-        is_mine = cls._convert_to_cubic([(x == player.value) * np.ones(x.shape) for x in game_state.board])
+        # get free fields in every layer and turn it into a cubic array
+        is_free = cls._convert_to_cubic([(x == 0) * np.ones(x.shape) for x in game_state.board])
         # get coordinates of the fields and turn them into 3-tuples
-        coords = np.transpose(np.where(is_mine == 1))
+        coords = np.transpose(np.where(is_free == 1))
 
-        # for loop over coordinates: if coordinate game_state.is_support, set its field in is_mine to zero
+        # for loop over coordinates: if coordinate game_state.is_support, set its field in is_free to zero
         for p in coords:
-            if game_state.completes_square(p):
-                is_mine[p] = 0
+            if game_state.completes_square(tuple(p), player) is False:
+                is_free[tuple(p)] = 0
 
-        return is_mine
+        return is_free
 
     @classmethod
     def _stone_is_free(cls, game_state, player):
@@ -62,8 +62,8 @@ class Encoder():
 
         # for loop over coordinates: if coordinate game_state.is_support, set its field in is_mine to zero
         for p in coords:
-            if game_state.is_support(p):
-                is_mine[p] = 0
+            if game_state.is_support(tuple(p)):
+                is_mine[tuple(p)] = 0
 
         return is_mine
 
@@ -73,6 +73,6 @@ class Encoder():
         Pylos-pyramids 4 layers and returns them in cubic form (4,4,4). It fills up empty positions w/ -1. """
         # fill up a layer w/ -1 to match the dimensions 4x4
         fill_up = lambda x: np.concatenate(
-            (np.concatenate((x, np.full((4 - len(x), len(x)), -1))), np.full((4, 4 - len(x)), -1)), axis=1)
+            (np.concatenate((x, np.full((4 - len(x), len(x)), -2))), np.full((4, 4 - len(x)), -2)), axis=1)
 
         return np.stack((M[0], fill_up(M[1]), fill_up(M[2]), fill_up(M[3])))

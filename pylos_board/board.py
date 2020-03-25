@@ -30,7 +30,7 @@ class GameState():
             new_board[z][x, y] = 0
             z, x, y = move.new_position
             new_board[z][x, y] = self.current_player.value
-            if self.completes_square(move.new_position):
+            if self.completes_square(move.new_position, self.current_player):
                 return GameState(board=new_board, current_player=self.current_player, stones_to_recover=2)
             else:
                 return GameState(board=new_board, current_player=self.current_player.next_player)
@@ -39,7 +39,7 @@ class GameState():
             new_board = self.board
             z, x, y = move.new_position
             new_board[z][x, y] = self.current_player.value
-            if self.completes_square(move.new_position):
+            if self.completes_square(move.new_position, self.current_player):
                 return GameState(board=new_board, current_player=self.current_player, stones_to_recover=2)
             else:
                 return GameState(board=new_board, current_player=self.current_player.next_player)
@@ -109,9 +109,9 @@ class GameState():
         stones_in_layer = lambda x: (x == self.current_player.value).sum()
         return sum(map(stones_in_layer, self.board)) < 16
 
-    def completes_square(self, position):
+    def completes_square(self, position, player):
         """ Checks whether a given completes a square. """
-        my_color = lambda x: self.get_value(x) == self.current_player.value
+        my_color = lambda x: self.get_value(x) == player.value
         z, x, y = position
         squares = [[(z, x+1, y), (z, x, y+1), (z, x+1, y+1)],
                    [(z, x, y+1), (z, x-1, y), (z, x-1, y+1)],

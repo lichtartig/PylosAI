@@ -1,4 +1,5 @@
 """ This module contains utility functions. """
+import numpy as np
 
 bottom_to_top = [(0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 1, 3), (0, 2, 0),
                  (0, 2, 1), (0, 2, 2), (0, 2, 3), (0, 3, 0), (0, 3, 1), (0, 3, 2), (0, 3, 3), (1, 0, 0), (1, 0, 1),
@@ -20,3 +21,8 @@ def print_board(game_state):
         output += '\n'
 
     print(output)
+
+def print_layer(a):
+    """ This function prints 4 layers of 4x4 arrays side by side. It's useful to monitor what the encoder is doing. """
+    for j in range(4):
+        print('\t'.join([np.array2string(a[i, j]) for i in range(4)]))
