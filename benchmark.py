@@ -3,6 +3,7 @@
 import random
 from pylos_board.board import GameState
 from pylos_agents import Human, SemiRandom, PolicyGradient, QLearning, ActorCritic
+from pylos_encoder import Encoder
 
 def RunGame(agent1, agent2):
     # assign colors randomly
@@ -46,7 +47,8 @@ def Benchmark(agent1, agent2):
 
 if __name__ == "__main__":
     # decide which agents play
-    agent1 = SemiRandom()  # Human()
+    encoder = Encoder()
+    agent1 = PolicyGradient(encoder) # SemiRandom()  # Human()
     agent2 = SemiRandom()  # Human()
     win1, win2 = 0, 0
     for i in range(100):

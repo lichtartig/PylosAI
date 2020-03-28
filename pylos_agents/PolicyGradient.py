@@ -12,7 +12,6 @@ from pylos_board.utilities import bottom_to_top, off_grid
 
 class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI """
-
     conv_layers = 4
     batch_normalisation = False
     dropout_rate = 0.0
@@ -50,8 +49,6 @@ class PolicyGradient(Agent):
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
-        self.model.summary()
-
         # TODO load previous weights
 
     def move_list(self, game_state):
@@ -62,18 +59,21 @@ class PolicyGradient(Agent):
          results of the neural net. """
         # Use the encoder on the game_state and pass it to the neural net
         inp = self.encoder.get_layers(game_state)
-        recover, place = self.model.predict(inp)
+        recover, place = self.model.predict(inp[None,:,:,:])
         # resize the results to fit to the board dimensions (4,4,4)
         recover.resize((4,4,4))
         place.resize((4,4,4))
 
         # get lists of probabilities where we sum up all off-grid coords into one
         coords = bottom_to_top + [(3,3,3)]
-        recov_prob = [recover[(p)] for p in bottom_to_top] + [0]
-        place_prob = [place[(p)] for p in bottom_to_top] + [0]
+        recov_prob = np.array([recover[(p)] for p in bottom_to_top] + [0])
+        place_prob = np.array([place[(p)] for p in bottom_to_top] + [0])
         for p in off_grid:
             recov_prob[-1] += recover[(p)]
             place_prob[-1] += place[(p)]
+        # normalize again b/c due to floating point error this is not exactly zero
+        recov_prob = recov_prob / recov_prob.sum()
+        place_prob = place_prob / place_prob.sum()
 
         # 1) the player just completed a square and there are stones to recover
         if game_state.stones_to_recover > 0:
@@ -92,12 +92,15 @@ class PolicyGradient(Agent):
         else:
             # all combinations of tuples (position in recov, position in place) are distinct moves. Sample from them!
             coord_comb = [(p, q) for p in coords for q in coords]
-            comb_prob = [recov_prob[recov_prob.index(p)] * place_prob[place_prob.index(q)] for (p,q) in coord_comb]
+            comb_prob = np.array([recov_prob[coords.index(p)] * place_prob[coords.index(q)] for (p,q) in coord_comb])
+            # normalize again b/c due to floating point error this is not exactly zero
+            comb_prob = comb_prob / comb_prob.sum()
             coord_indices = np.random.choice(range(len(coord_comb)), size=len(coord_comb), replace=False, p=comb_prob)
 
             # make an order list of moves
             moves = []
-            for (p,q) in coord_indices:
+            for i in coord_indices:
+                p, q = coord_comb[i]
                 # treat combinations that have (legal position, legal position) as raise_stone
                 if game_state.is_on_grid(p) and game_state.is_on_grid(q):
                     moves.append(Move.raise_stone(p, q))
