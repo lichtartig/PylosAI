@@ -2,6 +2,9 @@
 from pylos_board.board import Move
 
 class Agent:
+    def __str__(self):
+        return "base"
+
     def __init__(self):
         pass
 

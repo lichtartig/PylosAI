@@ -54,11 +54,11 @@ class GameState():
             return False
 
         # check if new position is on grid
-        if move.new_position != None and self._is_on_grid(move.new_position) is False:
+        if move.new_position != None and self.is_on_grid(move.new_position) is False:
             return False
 
         # check if current position is on grid
-        if move.current_position != None and self._is_on_grid(move.current_position) is False:
+        if move.current_position != None and self.is_on_grid(move.current_position) is False:
             return False
 
         # Check if the new position is free and has support
@@ -150,7 +150,7 @@ class GameState():
 
         return ret
 
-    def _is_on_grid(self, position):
+    def is_on_grid(self, position):
         if position[0] < 0 or 3 < position[0]:
             return False
         if position[1] < 0 or 3-position[0] < position[1]:

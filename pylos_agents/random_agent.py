@@ -5,6 +5,9 @@ from pylos_board.utilities import bottom_to_top
 from pylos_board.board import Move
 
 class SemiRandom(Agent):
+    def __str__(self):
+        return "SemiRandom"
+
     def move_list(self, game_state):
         ret = []
         # regular moves

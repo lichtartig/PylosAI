@@ -3,6 +3,9 @@ from pylos_agents.base import Agent
 from pylos_board.board import Move
 
 class Human(Agent):
+    def __str__(self):
+        return "Human"
+
     def __init__(self):
         self.name = input("Type in your name: ")
         self.color_dict = {1:"white", -1:"black"}

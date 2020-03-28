@@ -2,8 +2,7 @@
 import random
 import time
 from pylos_board.board import GameState, Player
-from pylos_agents.human import Human
-from pylos_agents.random_agent import SemiRandom
+from pylos_agents import Human, SemiRandom
 from pylos_board.utilities import print_board
 
 # this list will contain a list of game states at the end of the game

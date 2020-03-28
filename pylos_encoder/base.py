@@ -28,6 +28,12 @@ class Encoder():
         return np.concatenate((my_stones, opp_stones, my_comp_square, opp_comp_square, my_free_stones, opp_free_stones))
 
     @classmethod
+    def shape(cls):
+        """ This function returns the shape of the input. I.e. (<no of layers> * 4*, 4, 4)"""
+        #TODO this should not be hardcoded
+        return (4*6, 4, 4)
+
+    @classmethod
     def _players_stones(cls, game_state, player):
         """ This function returns is a feature plane that is 1 on every field on which the player has a stone
         and 0 otherwise. """
