@@ -50,3 +50,7 @@ class Human(Agent):
         # raise stone
         else:
             return Move.raise_stone(current_position=position(turn[:3]), new_position=position(turn[4:]))
+
+    @property
+    def train(self, generator):
+        raise NotImplementedError("The 'Human' agent has no train method.")

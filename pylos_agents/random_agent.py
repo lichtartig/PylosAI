@@ -33,3 +33,7 @@ class SemiRandom(Agent):
             ret.append(Move.pass_move())
 
         return ret
+
+    @property
+    def train(self, generator):
+        raise NotImplementedError("The 'SemiRandom' agent has no train method.")

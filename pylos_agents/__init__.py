@@ -4,3 +4,5 @@ from pylos_agents.random_agent import SemiRandom
 from pylos_agents.actor_critic import ActorCritic
 from pylos_agents.Q_learning import QLearning
 from pylos_agents.PolicyGradient import PolicyGradient
+
+import pylos_agents.PolicyGradient
