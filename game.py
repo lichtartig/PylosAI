@@ -12,7 +12,8 @@ the_game = []
 state = GameState.new_game()
 
 # decide which agents play
-#encoder = Encoder()
+encoder = Encoder()
+PolicyGradient(encoder)
 
 Player1 = SemiRandom() # Human() # PolicyGradient(encoder)
 Player2 = SemiRandom() # Human() # PolicyGradient(encoder)

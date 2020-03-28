@@ -36,16 +36,16 @@ class PolicyGradient(Agent):
 
         x = Flatten()(x)
         if self.dropout_rate > 0:
-            x = Dropout(rate=self.dropout_rate)
+            x = Dropout(rate=self.dropout_rate)(x)
         # this output encodes the stones that we take out either to raise a stone or to recover after a square
         # completion. If the point lies outside of the
-        recover = Dense(4**3, activation='softmax', name='main_output')(x)
+        recover = Dense(4**3, activation='softmax', name='recover')(x)
         # this output encodes the stones we place
-        place = Dense(4**3, activation='softmax', name='main_output')(x)
+        place = Dense(4**3, activation='softmax', name='place')(x)
 
         optimizer = Adadelta()
 
-        self.model = Model(inputs=main_input, outputs={recover, place})
+        self.model = Model(inputs=main_input, outputs=[recover, place])
         self.model.compile(optimizer=optimizer,
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
@@ -92,7 +92,7 @@ class PolicyGradient(Agent):
         else:
             # all combinations of tuples (position in recov, position in place) are distinct moves. Sample from them!
             coord_comb = [(p, q) for p in coords for q in coords]
-            comb_prob = [recov_prob[recov_prob.index(p) * place_prob[place_prob.index(q) for (p,q) in coord_comb]
+            comb_prob = [recov_prob[recov_prob.index(p)] * place_prob[place_prob.index(q)] for (p,q) in coord_comb]
             coord_indices = np.random.choice(range(len(coord_comb)), size=len(coord_comb), replace=False, p=comb_prob)
 
             # make an order list of moves
