@@ -1,5 +1,6 @@
 import enum
 import numpy as np
+from pylos_board.utilities import bottom_to_top
 
 class GameState():
     """ This class stores the current board position as well whose players turn it is. """
@@ -151,13 +152,7 @@ class GameState():
         return ret
 
     def is_on_grid(self, position):
-        if position[0] < 0 or 3 < position[0]:
-            return False
-        if position[1] < 0 or 3-position[0] < position[1]:
-            return False
-        if position[2] < 0 or 3-position[0] < position[2]:
-            return False
-        return True
+        return True if position in bottom_to_top else False
 
     def get_value(self, position):
         """ Given a position this function returns the value at that position (-1: black, 0: nothing, 1: white) """

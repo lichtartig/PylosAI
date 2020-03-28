@@ -2,8 +2,9 @@
 import random
 import time
 from pylos_board.board import GameState, Player
-from pylos_agents import Human, SemiRandom
+from pylos_agents import Human, SemiRandom, PolicyGradient, QLearning, ActorCritic
 from pylos_board.utilities import print_board
+from pylos_encoder import Encoder
 
 # this list will contain a list of game states at the end of the game
 the_game = []
@@ -11,8 +12,10 @@ the_game = []
 state = GameState.new_game()
 
 # decide which agents play
-Player1 = SemiRandom() # Human()
-Player2 = SemiRandom() # Human()
+#encoder = Encoder()
+
+Player1 = SemiRandom() # Human() # PolicyGradient(encoder)
+Player2 = SemiRandom() # Human() # PolicyGradient(encoder)
 # assign colors randomly
 game_agents = [Player1, Player2]
 random.shuffle(game_agents)

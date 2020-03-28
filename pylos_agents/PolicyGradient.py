@@ -1,7 +1,14 @@
+import numpy as np
 from keras.models import Model
 from keras.optimizers import Adadelta
 from keras.layers import Input, Conv2D, BatchNormalization, Flatten, Dropout, Dense
 from pylos_agents.base import Agent
+from pylos_board.board import Move
+from pylos_board.utilities import bottom_to_top, off_grid
+
+# TODO will be necessary for training functions
+# clipped_probs = np.clip(original_probs, min_p, max_p)
+# clipped_probs = clipped_probs / np.sum(clipped_probs)
 
 class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI """
@@ -48,10 +55,11 @@ class PolicyGradient(Agent):
         # TODO load previous weights
 
     def move_list(self, game_state):
+        # TODO introduce a randomness parameter, i.e. set all probabilities to zero that are below a certain fraction of the best move
         """ This function uses the encoder to turn a game state into a numpy array suitable to for a neural network
          and then gets a prediction from the neural network implemented in the constructor.
-         Based on this prediction it returns an orderd list of moves that contains a random component according to the
-         parameter passed to the function. """
+         Based on this prediction it returns an ordered list of moves that is obtained by random sampling based on the
+         results of the neural net. """
         # Use the encoder on the game_state and pass it to the neural net
         inp = self.encoder.get_layers(game_state)
         recover, place = self.model.predict(inp)
@@ -59,12 +67,45 @@ class PolicyGradient(Agent):
         recover.resize((4,4,4))
         place.resize((4,4,4))
 
-        # Distinguish between raise_stone and place_stone by the fact whether a move is on the grid (i.e. pyramid)
-        # game_state.is_on_grid(position)
+        # get lists of probabilities where we sum up all off-grid coords into one
+        coords = bottom_to_top + [(3,3,3)]
+        recov_prob = [recover[(p)] for p in bottom_to_top] + [0]
+        place_prob = [place[(p)] for p in bottom_to_top] + [0]
+        for p in off_grid:
+            recov_prob[-1] += recover[(p)]
+            place_prob[-1] += place[(p)]
 
-        # TODO introduce a randomness parameter
-        # return np.random.choice(['rock', 'paper', 'scissors'], size=3, replace=False, p=[0.5, 0.3, 0.2])
+        # 1) the player just completed a square and there are stones to recover
+        if game_state.stones_to_recover > 0:
+            # get random sample according to results from neural net
+            coord_indices = np.random.choice(range(len(coords)), size=len(coords), replace=False, p=recov_prob)
+            moves = []
+            for i in coord_indices:
+                position = coords[i]
+                if position in bottom_to_top:
+                    moves.append(Move.recover_stone(position))
+                else:
+                    moves.append(Move.pass_move())
+            return moves
 
-        # clipped_probs = np.clip(original_probs, min_p, max_p)
-        # clipped_probs = clipped_probs / np.sum(clipped_probs)
-        raise NotImplementedError
+        # 2) No stones to recover. Possible moves are raise_stone and place_stone
+        else:
+            # all combinations of tuples (position in recov, position in place) are distinct moves. Sample from them!
+            coord_comb = [(p, q) for p in coords for q in coords]
+            comb_prob = [recov_prob[recov_prob.index(p) * place_prob[place_prob.index(q) for (p,q) in coord_comb]
+            coord_indices = np.random.choice(range(len(coord_comb)), size=len(coord_comb), replace=False, p=comb_prob)
+
+            # make an order list of moves
+            moves = []
+            for (p,q) in coord_indices:
+                # treat combinations that have (legal position, legal position) as raise_stone
+                if game_state.is_on_grid(p) and game_state.is_on_grid(q):
+                    moves.append(Move.raise_stone(p, q))
+
+                # treat combinations that have (illegal position, legal position) as place_stone
+                elif game_state.is_on_grid(q):
+                    moves.append(Move.place_stone(q))
+
+                # discard combinations that have (position, illegal position)
+
+            return moves
