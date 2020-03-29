@@ -73,5 +73,5 @@ if __name__ == '__main__':
                                                     batch_norm=bn, dropout_rate=dr, pooling_layers=max(c - 2, 0),
                                                     weight_file=weight_file)
                             train_agent(agent1=agent1, agent2=agent2, verbose=1)
-                        print(c, nof, ndl, dd, bn, dr, weight_file, str(round((time.time()-start)/60)) + " min." )
+                            print(c, nof, ndl, dd, bn, dr, weight_file, str(round((time.time()-start)/60)) + " min." )
                             counter += 1
