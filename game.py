@@ -10,10 +10,10 @@ from pylos_board.utilities import print_board
 state = GameState.new_game()
 
 # decide which agents play
-Player1 = PolicyGradient() #SemiRandom() # Human()
-Player2 = SemiRandom() # Human() # PolicyGradient(encoder)
+agent1 = PolicyGradient() #SemiRandom() # Human()
+agent2 = Human() # SemiRandom() # PolicyGradient(encoder)
 # assign colors randomly
-game_agents = [Player1, Player2]
+game_agents = [agent1, agent2]
 random.shuffle(game_agents)
 colors = dict(zip([1,-1], game_agents))
 
@@ -22,10 +22,13 @@ while state.has_won() == False:
     print_board(state)
     player = colors[state.current_player.value]
     next_move = player.next_move(state)
+    if next_move.is_recover:
+        print("recover", state.stones_to_recover)
     if next_move.is_resign:
         break
     state = state.apply_move(next_move)
-    time.sleep(2)
+    if str(agent1) != "Human" and str(agent2) != "Human":
+        time.sleep(2)
 
 print("\n\nThe game is over!")
 if state.current_player == Player.white and state.has_won():

@@ -1,8 +1,13 @@
 import random
+import sys
+import os
 import numpy as np
+stderr = sys.stderr
+sys.stderr = open(os.devnull, 'w')
 from keras.models import Model
 from keras.optimizers import Adadelta
-from keras.layers import Input, Conv2D, BatchNormalization, Flatten, Dropout, Dense
+from keras.layers import Input, Conv2D, Flatten, Dense, BatchNormalization, Dropout
+sys.stderr = stderr
 from pylos_agents.base import Agent, BatchGenerator
 from pylos_board.board import Move
 from pylos_board.utilities import bottom_to_top, off_grid
@@ -11,10 +16,9 @@ from pylos_encoder import Encoder
 class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI """
     conv_layers = 4
-    batch_normalisation = False
-    dropout_rate = 0.0
-    no_of_filters = 32
-    kernel_size = (2,2)
+    no_of_filters = 8
+    kernel_size = (2, 2)
+    eps = 1e-3
     weight_file = "policy_gradient_weights.hdf5"
 
     def __init__(self):
@@ -26,14 +30,13 @@ class PolicyGradient(Agent):
         for i in range(self.conv_layers):
             x = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same',
                             activation='relu')(x)
-            if self.batch_normalisation:
-                x = BatchNormalization()(x)
+            x = BatchNormalization()(x)
 
         x = Flatten()(x)
-        if self.dropout_rate > 0:
-            x = Dropout(rate=self.dropout_rate)(x)
         # this output encodes the stones that we take out either to raise a stone or to recover after a square
         # completion. If the point lies outside of the
+        x = Dense(2*4**3, activation='relu')(x)
+        x = Dropout(rate=0.2)(x)
         recover = Dense(4**3, activation='softmax', name='recover')(x)
         # this output encodes the stones we place
         place = Dense(4**3, activation='softmax', name='place')(x)
@@ -42,20 +45,18 @@ class PolicyGradient(Agent):
 
         self.model = Model(inputs=main_input, outputs=[recover, place])
         self.model.compile(optimizer=optimizer,
-                      loss='categorical_crossentropy',
-                      metrics=['accuracy'])
+                      loss='categorical_crossentropy')
 
         # load weights if possible
         try:
             self.model.load_weights(self.weight_file)
-        except (OSError, FileNotFoundError):
+        except:
             pass
 
     def __str__(self):
         return "PolicyGradient"
 
-    def move_list(self, game_state, eps=1e-4):
-        # TODO introduce a randomness parameter, i.e. set all probabilities to zero that are below a certain fraction of the best move
+    def move_list(self, game_state):
         """ This function uses the encoder to turn a game state into a numpy array suitable to for a neural network
          and then gets a prediction from the neural network implemented in the constructor.
          Based on this prediction it returns an ordered list of moves that is obtained by random sampling based on the
@@ -76,8 +77,8 @@ class PolicyGradient(Agent):
             recov_prob[-1] += recover[(p)]
             place_prob[-1] += place[(p)]
         # clip and renormalize to avoid that a move becomes impossible or the only move. This disables learning.
-        recov_prob = np.clip(recov_prob, eps, 1-eps)
-        place_prob = np.clip(recov_prob, eps, 1-eps)
+        recov_prob = np.clip(recov_prob, self.eps, 1-self.eps)
+        place_prob = np.clip(recov_prob, self.eps, 1-self.eps)
         recov_prob = recov_prob / recov_prob.sum()
         place_prob = place_prob / place_prob.sum()
 
@@ -100,7 +101,7 @@ class PolicyGradient(Agent):
             coord_comb = [(p, q) for p in coords for q in coords]
             comb_prob = np.array([recov_prob[coords.index(p)] * place_prob[coords.index(q)] for (p,q) in coord_comb])
             # clip and renormalize to avoid that a move becomes impossible or the only move. This disables learning.
-            comb_prob = np.clip(comb_prob, eps, 1 - eps)
+            comb_prob = np.clip(comb_prob, self.eps, 1 - self.eps)
             comb_prob = comb_prob / comb_prob.sum()
             coord_indices = np.random.choice(range(len(coord_comb)), size=len(coord_comb), replace=False, p=comb_prob)
 
@@ -149,6 +150,7 @@ class PGBatchGenerator(BatchGenerator):
 
             rcv_tmp = np.zeros((4,4,4))
             plc_tmp = np.zeros((4,4,4))
+            # This is where the actual Policy as in PolicyGradient is implemented.
             rcv_tmp[cur_p] = wins[i]
             plc_tmp[new_p] = wins[i]
             recov_targets.append(rcv_tmp.flatten())

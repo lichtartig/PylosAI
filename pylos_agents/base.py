@@ -1,8 +1,13 @@
 """ This defines a base class for an AI-agent from which other agents may inherit. """
 import random
 import numpy as np
+import sys
+import os
+stderr = sys.stderr
+sys.stderr = open(os.devnull, 'w')
 from keras.callbacks import ModelCheckpoint
 from keras.utils import Sequence
+sys.stderr = stderr
 from pylos_board.board import Move, GameState
 
 class Agent:
@@ -19,6 +24,8 @@ class Agent:
         """ This function returns the next move and checks if it is valid. If not it passes to the next move in the
         list coming from move_list. If there are no moves left, it resigns.
         The reason for this implementation is to allow AI-agents not to check if a move is valid."""
+        if game_state.has_stones_left == False:
+            return Move.resign()
         for move in self.move_list(game_state):
             if game_state.is_valid_move(move):
                 return move
@@ -31,7 +38,7 @@ class Agent:
 
     def train(self, generator):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        self.model.fit_generator(generator=generator)
+        self.model.fit_generator(generator=generator, verbose=0, use_multiprocessing=True, workers=4)
 
     def save_weights(self):
         """ This saves the weights to a file."""

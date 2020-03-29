@@ -19,7 +19,7 @@ class GameState():
             new_board = self.board
             z, x, y = move.current_position
             new_board[z][x,y] = 0
-            if self.stones_to_recover > 0:
+            if self.stones_to_recover > 1:
                 next_player = self.current_player
             else:
                 next_player = self.current_player.next_player
@@ -49,7 +49,7 @@ class GameState():
     def is_valid_move(self, move):
         """ This function checks if a given move is allowed. It is a wrapper for the private functions below."""
         # If stones_to_recover is larger than zero, the only allowed moves are recover or pass
-        if self.stones_to_recover > 0 and move.is_recover == False and move.is_pass:
+        if self.stones_to_recover > 0 and move.is_recover == False and move.is_pass == False:
             return False
         elif self.stones_to_recover == 0 and (move.is_recover or move.is_pass):
             return False
@@ -84,7 +84,7 @@ class GameState():
             return False
 
         # If the player has no stones left to place, he has to pass
-        if self._has_stones_left() == 0 and move.is_pass == False:
+        if self.has_stones_left() == 0 and move.is_pass == False:
             return False
 
         return True
@@ -105,7 +105,7 @@ class GameState():
         list_of_pos_values = map(lambda x: self.get_value(x) != 0, self._supporting_stones(position))
         return all(list_of_pos_values)
 
-    def _has_stones_left(self):
+    def has_stones_left(self):
         """ Check if there are stones left to place for this player. """
         stones_in_layer = lambda x: (x == self.current_player.value).sum()
         return sum(map(stones_in_layer, self.board)) < 16
