@@ -25,13 +25,8 @@ class Encoder():
         # free fields in 2x2 squares where I already have 2 stones and there are two free fields left
         # free fields in 2x2 squares where the opponent already has 2 stones and there are two free fields left
 
-        return np.concatenate((my_stones, opp_stones, my_comp_square, opp_comp_square, my_free_stones, opp_free_stones))
-
-    @classmethod
-    def shape(cls):
-        """ This function returns the shape of the input. I.e. (<no of layers> * 4*, 4, 4)"""
-        #TODO this should not be hardcoded
-        return (4*6, 4, 4)
+        planes = [cls.ZXY_to_XYZ(p) for p in [my_stones, opp_stones, my_comp_square, opp_comp_square, my_free_stones, opp_free_stones]]
+        return planes
 
     @classmethod
     def _players_stones(cls, game_state, player):
@@ -82,3 +77,9 @@ class Encoder():
             (np.concatenate((x, np.full((4 - len(x), len(x)), -2))), np.full((4, 4 - len(x)), -2)), axis=1)
 
         return np.stack((M[0], fill_up(M[1]), fill_up(M[2]), fill_up(M[3])))
+
+    @classmethod
+    def ZXY_to_XYZ(cls, M):
+        """interchange axes from z, x, y to x, y, z to fit the channels_last convention"""
+        stack = np.swapaxes(M, 0, 1)
+        return np.swapaxes(stack, 1, 2)

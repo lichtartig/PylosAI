@@ -38,7 +38,7 @@ class Agent:
 
     def train(self, generator):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        self.model.fit_generator(generator=generator, verbose=0, use_multiprocessing=True, workers=4)
+        self.model.fit_generator(generator=generator, verbose=0)#, use_multiprocessing=True, workers=4)
 
     def save_weights(self):
         """ This saves the weights to a file."""

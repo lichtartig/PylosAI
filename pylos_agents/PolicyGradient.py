@@ -6,7 +6,7 @@ stderr = sys.stderr
 sys.stderr = open(os.devnull, 'w')
 from keras.models import Model
 from keras.optimizers import Adadelta
-from keras.layers import Input, Conv2D, Flatten, Dense, BatchNormalization, Dropout
+from keras.layers import Input, Conv2D, Flatten, Dense, BatchNormalization, Dropout, concatenate
 sys.stderr = stderr
 from pylos_agents.base import Agent, BatchGenerator
 from pylos_board.board import Move
@@ -14,36 +14,61 @@ from pylos_board.utilities import bottom_to_top, off_grid
 from pylos_encoder import Encoder
 
 class PolicyGradient(Agent):
-    """ This implements policy gradient, reinforcement learning AI """
-    conv_layers = 4
+    """ This implements policy gradient, reinforcement learning AI."""
+    conv_layers = 1
     no_of_filters = 8
     kernel_size = (2, 2)
-    eps = 1e-3
+    batch_norm = False
+    dropout_rate = 0.0
     weight_file = "policy_gradient_weights.hdf5"
 
-    def __init__(self):
-        """ This construtor compiles the neural network model based on the specs seen above. """
+    def __init__(self, eps=1e-3):
+        """ This constructor compiles the neural network model based on the specs seen above.
+        The parameter eps encodes the clipping applied to probabilities to keep the process stochastic.
+        probabilities can be as low as (eps) and as high as (1-eps)"""
         self.encoder = Encoder()
-        main_input = Input(shape=self.encoder.shape(), dtype='float32', name='main_input')
-        x = main_input
+        self.eps = eps
 
+        # get inputs
+        inputs = []
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='my_stones'))
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='opp_stones'))
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='my_comp_square'))
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='opp_comp_square'))
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='my_free_stones'))
+        inputs.append(Input(shape=(4,4,4), dtype='float32', name='opp_free_stones'))
+
+
+        # We treat all inputs in independent streams while passing through the convolutional networks, because there is
+        # no relevant spatial information between different feature planes
+        layers = [inputs]
         for i in range(self.conv_layers):
-            x = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same',
-                            activation='relu')(x)
-            x = BatchNormalization()(x)
+            nxt_layer = []
+            for l in layers[-1]:
+                tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu')(l)
+                if self.batch_norm: tmp = BatchNormalization()(tmp)
+                if i == self.conv_layers-1: tmp = Flatten()(tmp)
+                nxt_layer.append(tmp)
+            layers.append(nxt_layer)
+        # concatenate streams to proceed
+        x = concatenate(layers[-1])
 
-        x = Flatten()(x)
-        # this output encodes the stones that we take out either to raise a stone or to recover after a square
-        # completion. If the point lies outside of the
+
+        # Dense part of the network
         x = Dense(2*4**3, activation='relu')(x)
-        x = Dropout(rate=0.2)(x)
+        if self.dropout_rate > 0: x = Dropout(rate=0.2)(x)
+
+
+        # Output encodes the stones that we take out either to raise a stone or to recover after a square
+        # completion. If the point lies outside of the
         recover = Dense(4**3, activation='softmax', name='recover')(x)
         # this output encodes the stones we place
         place = Dense(4**3, activation='softmax', name='place')(x)
 
-        optimizer = Adadelta()
 
-        self.model = Model(inputs=main_input, outputs=[recover, place])
+        # compile the model
+        optimizer = Adadelta()
+        self.model = Model(inputs=inputs, outputs=[recover, place])
         self.model.compile(optimizer=optimizer,
                       loss='categorical_crossentropy')
 
@@ -63,8 +88,8 @@ class PolicyGradient(Agent):
          results of the neural net.
          The parameter eps encodes that a probability may be as low as (eps) and as high as (1-eps) """
         # Use the encoder on the game_state and pass it to the neural net
-        inp = self.encoder.get_layers(game_state)
-        recover, place = self.model.predict(inp[None,:,:,:])
+        inputs = [l[None,:,:,:] for l in self.encoder.get_layers(game_state)]
+        recover, place = self.model.predict(inputs)
         # resize the results to fit to the board dimensions (4,4,4)
         recover.resize((4, 4, 4))
         place.resize((4, 4, 4))
@@ -129,11 +154,13 @@ class PGBatchGenerator(BatchGenerator):
         """ Turns the data received from self._play_games into a format that fits the PG-agent."""
         states, wins, moves = self._play_games()
 
-        inp = []
+        inp = [[], [], [], [], [], []]
         recov_targets = []
         place_targets = []
         for i in range(len(moves)):
-            inp.append(self.encoder.get_layers(states[i]))
+            feature_planes = self.encoder.get_layers(states[i])
+            for i in range(len(inp)):
+                inp[i].append(feature_planes[i])
 
             if moves[i].is_raise:
                 new_p = moves[i].new_position
@@ -156,4 +183,7 @@ class PGBatchGenerator(BatchGenerator):
             recov_targets.append(rcv_tmp.flatten())
             place_targets.append(plc_tmp.flatten())
 
-        return np.array(inp), [np.array(recov_targets), np.array(place_targets)]
+        # turn the components of inp into numpy arrays
+        inp = [np.array(i) for i in inp]
+
+        return inp, [np.array(recov_targets), np.array(place_targets)]
