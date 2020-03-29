@@ -46,7 +46,10 @@ class Agent:
 
     def load_weights(self):
         """ This loads the weights to a file."""
-        self.model.load_weights(self.weight_file)
+        try:
+            self.model.load_weights(self.weight_file)
+        except:
+            pass
 
 class BatchGenerator(Sequence):
     ''' This class serves as a data generator for keras s.t. we don't have to load all images at once.

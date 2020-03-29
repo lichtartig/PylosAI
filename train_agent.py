@@ -73,3 +73,6 @@ if __name__ == '__main__':
                             train_agent(agent1=agent1, agent2=agent2, verbose=1)
                             print(c, nof, ndl, dd, bn, dr, weight_file, str(round((time.time()-start)/60)) + " min." )
                             counter += 1
+
+# c nof ndl dd bn dr
+#1 8 0 64 True 0.0 policy_gradient_weights2.hdf Final benchmark: The agent won  644  games of a total of  1000  against the SemiRandom agent.
