@@ -22,10 +22,8 @@ def train_agent(agent1, agent2, verbose=0):
                                epoch_size=epoch_size)
         agent1.train(gen)
         win1, win2 = benchmark.Benchmark(agent1, agent2)
-        win1sr, win2sr = benchmark.Benchmark(agent1, SemiRandom())
         if verbose == 0:
-            print("The agent won ", win1, " games of a total of ", win1 + win2, " against his previous version. (", win1sr,
-                  "/", win1sr + win2sr, "against SemiRandom)")
+            print("The agent won ", win1, " games of a total of ", win1 + win2, " against his previous version.")
         if win1 >= 65:
             agent1.save_weights()
             # reload the weights to improve the strength
