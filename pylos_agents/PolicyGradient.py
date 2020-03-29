@@ -15,27 +15,24 @@ from pylos_encoder import Encoder
 
 class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI."""
-    conv_layers = 4
-    no_of_filters = 8
-    kernel_size = (2, 2)
 
-    pool_size = (2,2)
-    pooling_layers = 2
-
-    no_dense_layers = 2
-    dense_dim = 4**3
-
-    batch_norm = False
-    dropout_rate = 0.0
-
-    weight_file = "policy_gradient_weights.hdf5"
-
-    def __init__(self, eps=1e-3):
+    def __init__(self, eps=1e-3, conv_layers=4, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
+                 no_dense_layers=2, dense_dim=64, batch_norm=False, dropout_rate=0.0, weight_file = "policy_gradient_weights.hdf5"):
         """ This constructor compiles the neural network model based on the specs seen above.
         The parameter eps encodes the clipping applied to probabilities to keep the process stochastic.
         probabilities can be as low as (eps) and as high as (1-eps)"""
         self.encoder = Encoder()
         self.eps = eps
+        self.conv_layers = conv_layers
+        self.no_of_filters = no_of_filters
+        self.kernel_size = kernel_size
+        self.pool_size = pool_size
+        self.pooling_layers = pooling_layers
+        self.no_dense_layers = no_dense_layers
+        self.dense_dim = dense_dim
+        self.batch_norm = batch_norm
+        self.dropout_rate = dropout_rate
+        self.weight_file = weight_file
 
         # get inputs
         inputs = []
@@ -81,9 +78,6 @@ class PolicyGradient(Agent):
         self.model = Model(inputs=inputs, outputs=[recover, place])
         self.model.compile(optimizer=optimizer,
                       loss='categorical_crossentropy')
-
-        #self.model.summary()
-        #input()
 
         # load weights if possible
         try:

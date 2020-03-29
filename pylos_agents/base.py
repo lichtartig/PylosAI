@@ -38,11 +38,15 @@ class Agent:
 
     def train(self, generator):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        self.model.fit_generator(generator=generator, verbose=0)#, use_multiprocessing=True, workers=4)
+        self.model.fit_generator(generator=generator, verbose=0, use_multiprocessing=True, workers=4)
 
     def save_weights(self):
         """ This saves the weights to a file."""
         self.model.save_weights(self.weight_file)
+
+    def load_weights(self):
+        """ This loads the weights to a file."""
+        self.model.load_weights(self.weight_file)
 
 class BatchGenerator(Sequence):
     ''' This class serves as a data generator for keras s.t. we don't have to load all images at once.
