@@ -47,12 +47,15 @@ class Agent:
 class BatchGenerator(Sequence):
     ''' This class serves as a data generator for keras s.t. we don't have to load all images at once.
     a game is about 40 moves. '''
-    def __init__(self, agent1, agent2, encoder, batch_size=200, epoch_size=20000):
+    def __init__(self, agent1, agent2, encoder, states, wins, moves, batch_size=1000, epoch_size=40000):
         self.agent1 = agent1
         self.agent2 = agent2
         self.batch_size = batch_size
         self.epoch_size = epoch_size
         self.encoder = encoder
+        self.states = states
+        self.wins = wins
+        self.moves = moves
 
     def __len__(self):
         ''' returns the total number of batches. '''
@@ -62,7 +65,15 @@ class BatchGenerator(Sequence):
         """ This function should be implemented on the level of the child-BatchGenerators"""
         raise NotImplementedError
 
-    def _play_games(self):
+
+class PlayGames:
+    """ This class returns a batch of moves from games played between the two agents. """
+    def __init__(self, agent1, agent2, no_of_moves):
+        self.agent1 = agent1
+        self.agent2 = agent2
+        self.no_of_moves = no_of_moves
+
+    def play_games(self):
         """ This function plays games of the two agents against each other and returns three lists:
         1) a list of GameStates
         2 ) a list of the winners of the corresponding games relative to the player whose turn it is (1 or -1)
@@ -71,7 +82,7 @@ class BatchGenerator(Sequence):
         wins = []
         moves = []
 
-        while len(states) < self.batch_size:
+        while len(states) < self.no_of_moves:
             state_buffer = [GameState.new_game()]
             move_buffer = []
             # assign colors randomly

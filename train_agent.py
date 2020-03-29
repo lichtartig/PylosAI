@@ -1,4 +1,5 @@
 from pylos_agents.PolicyGradient import PGBatchGenerator
+from pylos_agents.base import PlayGames
 from pylos_agents import PolicyGradient, QLearning, ActorCritic, SemiRandom
 from pylos_encoder import Encoder
 import benchmark
@@ -12,14 +13,16 @@ if __name__ == '__main__':
 
     encoder = Encoder()
     agent1 = PolicyGradient()
-    agent2 = SemiRandom() # PolicyGradient()
+    agent2 = PolicyGradient()
+    play_games = PlayGames(agent1=agent1, agent2=agent2, no_of_moves=40000)
 
     # train the two agents against each other. Every time the trained agent improves, we update the opponent as well.
-    # after 3 epochs of no improvement, we terminate.
+    # after a few epochs of no improvement, we terminate and perform a final more exact benchmark
     print("Starting training...")
     epochs_wo_improvement = 0
     while epochs_wo_improvement < 5:
-        gen = PGBatchGenerator(agent1, agent2, encoder)
+        states, wins, moves = play_games.play_games()
+        gen = PGBatchGenerator(agent1, agent2, encoder, states, wins, moves)
         agent1.train(gen)
         win1, win2 = benchmark.Benchmark(agent1, agent2)
         win1sr, win2sr = benchmark.Benchmark(agent1, SemiRandom())
@@ -27,7 +30,8 @@ if __name__ == '__main__':
         if win1 >= 65:
             agent1.save_weights()
             # reload the weights to improve the strength
-            #agent2 = PolicyGradient()
+            agent2 = PolicyGradient()
+            play_games = PlayGames(agent1=agent1, agent2=agent2, no_of_moves=40000)
             epochs_wo_improvement = 0
         else:
             epochs_wo_improvement += 1

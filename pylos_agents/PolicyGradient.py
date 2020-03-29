@@ -6,7 +6,7 @@ stderr = sys.stderr
 sys.stderr = open(os.devnull, 'w')
 from keras.models import Model
 from keras.optimizers import Adadelta
-from keras.layers import Input, Conv2D, Flatten, Dense, BatchNormalization, Dropout, concatenate
+from keras.layers import Input, Conv2D, Flatten, Dense, concatenate, MaxPooling2D, Dropout, BatchNormalization
 sys.stderr = stderr
 from pylos_agents.base import Agent, BatchGenerator
 from pylos_board.board import Move
@@ -15,11 +15,19 @@ from pylos_encoder import Encoder
 
 class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI."""
-    conv_layers = 1
+    conv_layers = 4
     no_of_filters = 8
     kernel_size = (2, 2)
+
+    pool_size = (2,2)
+    pooling_layers = 2
+
+    no_dense_layers = 2
+    dense_dim = 4**3
+
     batch_norm = False
     dropout_rate = 0.0
+
     weight_file = "policy_gradient_weights.hdf5"
 
     def __init__(self, eps=1e-3):
@@ -46,6 +54,7 @@ class PolicyGradient(Agent):
             nxt_layer = []
             for l in layers[-1]:
                 tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu')(l)
+                if i == self.conv_layers-self.pooling_layers: tmp = MaxPooling2D(pool_size=self.pool_size)(tmp)
                 if self.batch_norm: tmp = BatchNormalization()(tmp)
                 if i == self.conv_layers-1: tmp = Flatten()(tmp)
                 nxt_layer.append(tmp)
@@ -55,8 +64,9 @@ class PolicyGradient(Agent):
 
 
         # Dense part of the network
-        x = Dense(2*4**3, activation='relu')(x)
-        if self.dropout_rate > 0: x = Dropout(rate=0.2)(x)
+        for i in range(self.no_dense_layers):
+            x = Dense(self.dense_dim, activation='relu')(x)
+            if self.dropout_rate > 0.0: x = Dropout(rate=self.dropout_rate)(x)
 
 
         # Output encodes the stones that we take out either to raise a stone or to recover after a square
@@ -71,6 +81,9 @@ class PolicyGradient(Agent):
         self.model = Model(inputs=inputs, outputs=[recover, place])
         self.model.compile(optimizer=optimizer,
                       loss='categorical_crossentropy')
+
+        #self.model.summary()
+        #input()
 
         # load weights if possible
         try:
@@ -152,34 +165,32 @@ class PGBatchGenerator(BatchGenerator):
 
     def __getitem__(self, index):
         """ Turns the data received from self._play_games into a format that fits the PG-agent."""
-        states, wins, moves = self._play_games()
-
         inp = [[], [], [], [], [], []]
         recov_targets = []
         place_targets = []
-        for i in range(len(moves)):
-            feature_planes = self.encoder.get_layers(states[i])
+        for i in range(len(self.moves)):
+            feature_planes = self.encoder.get_layers(self.states[i])
             for i in range(len(inp)):
                 inp[i].append(feature_planes[i])
 
-            if moves[i].is_raise:
-                new_p = moves[i].new_position
-                cur_p = moves[i].current_position
-            elif moves[i].is_pass:
+            if self.moves[i].is_raise:
+                new_p = self.moves[i].new_position
+                cur_p = self.moves[i].current_position
+            elif self.moves[i].is_pass:
                 new_p = random.choice(off_grid)
                 cur_p = random.choice(off_grid)
-            elif moves[i].is_recover:
+            elif self.moves[i].is_recover:
                 new_p = random.choice(off_grid)
-                cur_p = moves[i].current_position
+                cur_p = self.moves[i].current_position
             else:
-                new_p = moves[i].new_position
+                new_p = self.moves[i].new_position
                 cur_p = random.choice(off_grid)
 
             rcv_tmp = np.zeros((4,4,4))
             plc_tmp = np.zeros((4,4,4))
             # This is where the actual Policy as in PolicyGradient is implemented.
-            rcv_tmp[cur_p] = wins[i]
-            plc_tmp[new_p] = wins[i]
+            rcv_tmp[cur_p] = self.wins[i]
+            plc_tmp[new_p] = self.wins[i]
             recov_targets.append(rcv_tmp.flatten())
             place_targets.append(plc_tmp.flatten())
 
