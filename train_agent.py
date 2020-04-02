@@ -16,7 +16,7 @@ def train_agent(agent1, agent2, verbose=0):
     if verbose == 0: print("Starting training...")
 
     epochs_wo_improvement = 0
-    while epochs_wo_improvement < 5:
+    while epochs_wo_improvement < 20:
         states, wins, moves = play_games.play_games()
         gen = PGBatchGenerator(agent1=agent1, agent2=agent2, encoder=encoder, states=states, wins=wins, moves=moves,
                                epoch_size=epoch_size)
@@ -52,27 +52,17 @@ if __name__ == '__main__':
     dropout_rate = [0.0, 0.2]
 
     pooling_layers = 2 # max(conv_layers-2, 0)
-    base_file = "policy_gradient_weights" # + number + ".hdf5"
     counter = 0
 
-    print("Starting scan...")
-    for c in conv_layers:
-        for nof in no_of_filters:
-            for ndl in no_dense_layers:
-                for dd in dense_dim:
-                    for bn in batch_norm:
-                        for dr in dropout_rate:
-                            start = time.time()
-                            weight_file = base_file + str(counter) + ".hdf"
-                            agent1 = PolicyGradient(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd,
-                                                    batch_norm=bn, dropout_rate=dr, pooling_layers=max(c - 2, 0),
-                                                    weight_file=weight_file)
-                            agent2 = PolicyGradient(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd,
-                                                    batch_norm=bn, dropout_rate=dr, pooling_layers=max(c - 2, 0),
-                                                    weight_file=weight_file)
-                            train_agent(agent1=agent1, agent2=agent2, verbose=1)
-                            print(c, nof, ndl, dd, bn, dr, weight_file, str(round((time.time()-start)/60)) + " min." )
-                            counter += 1
+    c, nof, ndl, dd, bn, dr, weight_file = [1, 8, 0, 128, True, 0.0, "policy_gradient_weights.hdf"]
 
-# c nof ndl dd bn dr
-#1 8 0 64 True 0.0 policy_gradient_weights2.hdf Final benchmark: The agent won  644  games of a total of  1000  against the SemiRandom agent.
+    start = time.time()
+    agent1 = PolicyGradient(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd,
+                            batch_norm=bn, dropout_rate=dr, pooling_layers=max(c - 2, 0),
+                            weight_file=weight_file)
+    agent2 = PolicyGradient(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd,
+                            batch_norm=bn, dropout_rate=dr, pooling_layers=max(c - 2, 0),
+                            weight_file=weight_file)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print(weight_file, str(round((time.time() - start) / 60)) + " min.")
+    counter += 1
