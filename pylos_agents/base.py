@@ -75,10 +75,11 @@ class BatchGenerator(Sequence):
 
 class PlayGames:
     """ This class returns a batch of moves from games played between the two agents. """
-    def __init__(self, agent1, agent2, no_of_moves):
+    def __init__(self, agent1, agent2, no_of_moves, calculate_advantage=False):
         self.agent1 = agent1
         self.agent2 = agent2
         self.no_of_moves = no_of_moves
+        self.calculate_advantage = calculate_advantage
 
     def play_games(self):
         """ This function plays games of the two agents against each other and returns three lists:
@@ -88,10 +89,13 @@ class PlayGames:
         states = []
         wins = []
         moves = []
+        advantage = []
 
         while len(states) < self.no_of_moves:
             state_buffer = [GameState.new_game()]
             move_buffer = []
+            if self.calculate_advantage:
+                advantage_buffer = [self.agent1.ComputeAdvantage(state_buffer[-1])]
             # assign colors randomly
             game_agents = [self.agent1, self.agent2]
             random.shuffle(game_agents)
@@ -105,10 +109,14 @@ class PlayGames:
                     break
                 move_buffer.append(next_move)
                 state_buffer.append(state_buffer[-1].apply_move(next_move))
+                if self.calculate_advantage:
+                    advantage_buffer.append(self.agent1.ComputeAdvantage(state_buffer[-1]))
 
             # copy buffer to results
             states += state_buffer
             moves += move_buffer
+            if self.calculate_advantage:
+                advantage += advantage_buffer
             # no matter if a game ends by winning or resigning, the last state is always of the winner
             win_buffer = int(np.ceil(len(state_buffer)/2))*[-1, 1]
             if len(win_buffer) == len(states):
@@ -116,4 +124,4 @@ class PlayGames:
             else:
                 wins += win_buffer[1:]
 
-            return states, wins, moves
+            return states, wins, moves, advantage

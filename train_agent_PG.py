@@ -1,6 +1,6 @@
-from pylos_agents.PolicyGradient import PGBatchGenerator
+from pylos_agents.policy_gradient import PGBatchGenerator
 from pylos_agents.base import PlayGames
-from pylos_agents import PolicyGradient, QLearning, ActorCritic, SemiRandom
+from pylos_agents import PolicyGradient, SemiRandom
 from pylos_encoder import Encoder
 import benchmark
 import logging, os
@@ -17,7 +17,7 @@ def train_agent(agent1, agent2, verbose=0):
 
     epochs_wo_improvement = 0
     while epochs_wo_improvement < 20:
-        states, wins, moves = play_games.play_games()
+        states, wins, moves = play_games.play_games()[:3]
         gen = PGBatchGenerator(agent1=agent1, agent2=agent2, encoder=encoder, states=states, wins=wins, moves=moves,
                                epoch_size=epoch_size)
         agent1.train(gen)
@@ -44,16 +44,7 @@ if __name__ == '__main__':
     logging.disable(logging.WARNING)
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-    conv_layers = [1,2,4,8]
-    no_of_filters = [8,16,32]
-    no_dense_layers = [0, 1, 2]
-    dense_dim = [64, 128]
-    batch_norm = [False, True]
-    dropout_rate = [0.0, 0.2]
-
-    pooling_layers = 2 # max(conv_layers-2, 0)
-    counter = 0
-
+    # best configuration for the Policy-Gradient AI
     c, nof, ndl, dd, bn, dr, weight_file = [1, 8, 0, 128, True, 0.0, "policy_gradient_weights.hdf"]
 
     start = time.time()
@@ -65,4 +56,3 @@ if __name__ == '__main__':
                             weight_file=weight_file)
     train_agent(agent1=agent1, agent2=agent2, verbose=0)
     print(weight_file, str(round((time.time() - start) / 60)) + " min.")
-    counter += 1

@@ -2,7 +2,7 @@
  the results. If it is called from another module, it will return the final stats. """
 import random
 from pylos_board.board import GameState
-from pylos_agents import Human, SemiRandom, PolicyGradient, QLearning, ActorCritic
+from pylos_agents import Human, SemiRandom, PolicyGradient, ActorCritic
 
 def RunGame(agent1, agent2):
     # assign colors randomly

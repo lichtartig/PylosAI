@@ -2,7 +2,7 @@
 import random
 import time
 from pylos_board.board import GameState, Player
-from pylos_agents import Human, SemiRandom, PolicyGradient, QLearning, ActorCritic
+from pylos_agents import Human, SemiRandom, PolicyGradient, ActorCritic
 from pylos_board.utilities import print_board
 
 
@@ -10,7 +10,7 @@ from pylos_board.utilities import print_board
 state = GameState.new_game()
 
 # decide which agents play
-agent1 = PolicyGradient() #SemiRandom() # Human()
+agent1 = ActorCritic() # PolicyGradient() # SemiRandom() # Human()
 agent2 = Human() # SemiRandom() # PolicyGradient(encoder)
 # assign colors randomly
 game_agents = [agent1, agent2]
