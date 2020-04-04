@@ -159,11 +159,11 @@ class ActorCritic(Agent):
 
             return moves
 
-    def ComputeAdvantage(self, game_state):
+    def ComputeValueFct(self, game_state):
         """ This function takes a gamestate and computes the advantage A(X) from the perspective of the current player."""
         inputs = [l[None, :, :, :] for l in self.encoder.get_layers(game_state)] + [np.array([[game_state.stones_to_recover]])]
         recover, place, value = self.model.predict(inputs)
-        return value
+        return value[0,0]
 
     def GetPrediction(self, game_state):
         inputs = [l[None, :, :, :] for l in self.encoder.get_layers(game_state)] + [

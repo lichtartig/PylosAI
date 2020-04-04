@@ -8,7 +8,7 @@ sys.stderr = open(os.devnull, 'w')
 from keras.utils import Sequence
 sys.stderr = stderr
 from pylos_board.board import Move, GameState
-from pylos_board.utilities import off_grid
+from pylos_board.utilities import off_grid, print_board
 
 class Agent:
     model = None
@@ -51,7 +51,7 @@ class Agent:
         except:
             pass
 
-    def ComputeAdvantage(self, game_state):
+    def ComputeValueFct(self, game_state):
         """ This is a dummy function that allows to implement the same batch-generator for policy gradient and
         actor critic models. It is overwritten in the latter case."""
         return 0
@@ -59,7 +59,7 @@ class Agent:
 class BatchGenerator(Sequence):
     ''' This class serves as a data generator for keras s.t. we don't have to load all images at once.
     a game is about 40 moves. '''
-    def __init__(self, agent1, agent2, encoder, states, wins, moves, advantages, batch_size=1000, epoch_size=40000, value_fct=True):
+    def __init__(self, agent1, agent2, encoder, states, wins, moves, value_fct, batch_size=1000, epoch_size=40000, output_includes_value_fct=True):
         self.agent1 = agent1
         self.agent2 = agent2
         self.batch_size = batch_size
@@ -68,8 +68,8 @@ class BatchGenerator(Sequence):
         self.states = states
         self.wins = wins
         self.moves = moves
-        self.advantages = advantages
         self.value_fct = value_fct
+        self.output_includes_value_fct = output_includes_value_fct
 
     def __len__(self):
         ''' returns the total number of batches. '''
@@ -91,21 +91,21 @@ class BatchGenerator(Sequence):
                 new_p = self.moves[i].new_position
                 cur_p = self.moves[i].current_position
             elif self.moves[i].is_pass:
-                new_p = (3,3,3)
-                cur_p = (3,3,3)
+                new_p = random.choice(off_grid)
+                cur_p =  random.choice(off_grid)
             elif self.moves[i].is_recover:
-                new_p = (3,3,3)
+                new_p =  random.choice(off_grid)
                 cur_p = self.moves[i].current_position
             else:
                 new_p = self.moves[i].new_position
-                cur_p = (3,3,3)
+                cur_p =  random.choice(off_grid)
 
             rcv_tmp = np.zeros((4, 4, 4))
             plc_tmp = np.zeros((4, 4, 4))
             # This is where the actual Policy is implemented. Note, that advantages is 0 if there is no advantage.
             # This means the two lines implement both the PolicyGradient as well as the ActorCritic policy
-            rcv_tmp[cur_p] = self.wins[i] - self.advantages[i]
-            plc_tmp[new_p] = self.wins[i] - self.advantages[i]
+            rcv_tmp[cur_p] = self.wins[i] - self.value_fct[i]
+            plc_tmp[new_p] = self.wins[i] - self.value_fct[i]
             recov_targets.append(rcv_tmp.flatten())
             place_targets.append(plc_tmp.flatten())
             value_targets.append(self.wins[i])
@@ -113,7 +113,7 @@ class BatchGenerator(Sequence):
         # turn the components of inp into numpy arrays
         inp = [np.array(i) for i in inp]
 
-        if self.value_fct:
+        if self.output_includes_value_fct:
             return inp, [np.array(recov_targets), np.array(place_targets), np.array(value_targets)]
         else:
             return inp, [np.array(recov_targets), np.array(place_targets)]
@@ -133,12 +133,12 @@ class PlayGames:
         states = []
         wins = []
         moves = []
-        advantage = []
+        value_fct = []
 
         while len(states) < self.no_of_moves:
             state_buffer = [GameState.new_game()]
             move_buffer = []
-            advantage_buffer = [self.agent1.ComputeAdvantage(state_buffer[-1])]
+            value_fct_buffer = [self.agent1.ComputeValueFct(state_buffer[-1])]
             # assign colors randomly
             game_agents = [self.agent1, self.agent2]
             random.shuffle(game_agents)
@@ -152,14 +152,17 @@ class PlayGames:
                     break
                 move_buffer.append(next_move)
                 state_buffer.append(state_buffer[-1].apply_move(next_move))
-                advantage_buffer.append(self.agent1.ComputeAdvantage(state_buffer[-1]))
+                value_fct_buffer.append(self.agent1.ComputeValueFct(state_buffer[-1]))
 
             # copy buffer to results
             states += state_buffer
             moves += move_buffer
-            advantage += advantage_buffer
-            # no matter if a game ends by winning or resigning, the last state is always of the winner
-            win_buffer = int(np.ceil(len(state_buffer)/2))*[-1, 1]
+            value_fct += value_fct_buffer
+            # assign the labels which player won the game
+            if state_buffer[-1].has_won():
+                win_buffer = int(np.ceil(len(state_buffer)/2))*[-1, 1]
+            else:
+                win_buffer = int(np.ceil(len(state_buffer) / 2)) * [1, -1]
             if len(win_buffer) == len(states):
                 wins += win_buffer
             else:
@@ -171,6 +174,6 @@ class PlayGames:
         states = [states[i] for i in indices]
         wins = [wins[i] for i in indices]
         moves = [moves[i] for i in indices]
-        advantage = [advantage[i] for i in indices]
+        value_fct = [value_fct[i] for i in indices]
 
-        return states, wins, moves, advantage
+        return states, wins, moves, value_fct

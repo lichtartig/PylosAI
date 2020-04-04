@@ -47,7 +47,7 @@ def train_agent(agent1, agent2, verbose=0):
         counter += 1
 
         gen = BatchGenerator(agent1=agent1, agent2=agent2, encoder=encoder, states=states, wins=wins, moves=moves,
-                               advantages=advantages, epoch_size=epoch_size, value_fct=value_fct)
+                             value_fct=advantages, epoch_size=epoch_size, output_includes_value_fct=value_fct)
         agent1.train(generator=gen, verbose=verbose)
         win1, win2 = benchmark.Benchmark(agent1, agent2)
         if verbose == 1:
@@ -72,12 +72,10 @@ if __name__ == '__main__':
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
     # TODO Write Tree search AI, let it play against ActorCritic (to remain stochastic) and use it as training data
-    # TODO try to randomly choose off-grid field instead of picking (3,3,3)
-    # TODO or on the opposite end: bundle all the results into (3,3,3)
 
     start = time.time()
-    # agent1 = ActorCritic(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
-    agent1 = PolicyGradient(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
+    agent1 = ActorCritic(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
+    #agent1 = PolicyGradient(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
     #agent2 = ActorCritic(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd, batch_norm=bn,
     #                     dropout_rate=dr, weight_file=weight_file)
     agent2 = SemiRandom()
