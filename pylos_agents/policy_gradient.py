@@ -8,7 +8,7 @@ from keras.models import Model
 from keras.optimizers import Adadelta
 from keras.layers import Input, Conv2D, Flatten, Dense, concatenate, MaxPooling2D, Dropout, BatchNormalization
 sys.stderr = stderr
-from pylos_agents.base import Agent, BatchGenerator
+from pylos_agents.base import Agent
 from pylos_board.board import Move
 from pylos_board.utilities import bottom_to_top, off_grid
 from pylos_encoder import Encoder
@@ -56,6 +56,10 @@ class PolicyGradient(Agent):
                 if i == self.conv_layers-1: tmp = Flatten()(tmp)
                 nxt_layer.append(tmp)
             layers.append(nxt_layer)
+
+        # add also the number of stones to recover as an input to distinguish otherwise equal gamestates
+        inputs.append(Input(shape=(1,), dtype='float32', name='stones_to_recover'))
+        layers[-1].append(inputs[-1])
         # concatenate streams to proceed
         x = concatenate(layers[-1])
 
@@ -95,22 +99,19 @@ class PolicyGradient(Agent):
          results of the neural net.
          The parameter eps encodes that a probability may be as low as (eps) and as high as (1-eps) """
         # Use the encoder on the game_state and pass it to the neural net
-        inputs = [l[None,:,:,:] for l in self.encoder.get_layers(game_state)]
+        inputs = [l[None,:,:,:] for l in self.encoder.get_layers(game_state)] + [np.array([[game_state.stones_to_recover]])]
         recover, place = self.model.predict(inputs)
         # resize the results to fit to the board dimensions (4,4,4)
         recover.resize((4, 4, 4))
         place.resize((4, 4, 4))
 
-        # get lists of probabilities where we sum up all off-grid coords into one
-        coords = bottom_to_top + [(3, 3, 3)]
-        recov_prob = np.array([recover[(p)] for p in bottom_to_top] + [0])
-        place_prob = np.array([place[(p)] for p in bottom_to_top] + [0])
-        for p in off_grid:
-            recov_prob[-1] += recover[(p)]
-            place_prob[-1] += place[(p)]
+        # get lists of probabilities
+        coords = bottom_to_top + off_grid
+        recov_prob = np.array([recover[(p)] for p in coords])
+        place_prob = np.array([place[(p)] for p in coords])
         # clip and renormalize to avoid that a move becomes impossible or the only move. This disables learning.
         recov_prob = np.clip(recov_prob, self.eps, 1-self.eps)
-        place_prob = np.clip(recov_prob, self.eps, 1-self.eps)
+        place_prob = np.clip(place_prob, self.eps, 1-self.eps)
         recov_prob = recov_prob / recov_prob.sum()
         place_prob = place_prob / place_prob.sum()
 
@@ -152,43 +153,3 @@ class PolicyGradient(Agent):
                 # discard combinations that have (position, illegal position)
 
             return moves
-
-class PGBatchGenerator(BatchGenerator):
-    """ This Generator returns the data in the form necessary for the PolicyGradient agent above. Most of its functions
-    are inherited from the base class. """
-
-    def __getitem__(self, index):
-        """ Turns the data received from self._play_games into a format that fits the PG-agent."""
-        inp = [[], [], [], [], [], []]
-        recov_targets = []
-        place_targets = []
-        for i in range(len(self.moves)):
-            feature_planes = self.encoder.get_layers(self.states[i])
-            for i in range(len(inp)):
-                inp[i].append(feature_planes[i])
-
-            if self.moves[i].is_raise:
-                new_p = self.moves[i].new_position
-                cur_p = self.moves[i].current_position
-            elif self.moves[i].is_pass:
-                new_p = random.choice(off_grid)
-                cur_p = random.choice(off_grid)
-            elif self.moves[i].is_recover:
-                new_p = random.choice(off_grid)
-                cur_p = self.moves[i].current_position
-            else:
-                new_p = self.moves[i].new_position
-                cur_p = random.choice(off_grid)
-
-            rcv_tmp = np.zeros((4,4,4))
-            plc_tmp = np.zeros((4,4,4))
-            # This is where the actual Policy as in PolicyGradient is implemented.
-            rcv_tmp[cur_p] = self.wins[i]
-            plc_tmp[new_p] = self.wins[i]
-            recov_targets.append(rcv_tmp.flatten())
-            place_targets.append(plc_tmp.flatten())
-
-        # turn the components of inp into numpy arrays
-        inp = [np.array(i) for i in inp]
-
-        return inp, [np.array(recov_targets), np.array(place_targets)]

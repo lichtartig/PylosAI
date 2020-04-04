@@ -3,5 +3,4 @@ from pylos_agents.human import Human
 from pylos_agents.random_agent import SemiRandom
 from pylos_agents.actor_critic import ActorCritic
 from pylos_agents.policy_gradient import PolicyGradient
-import pylos_agents.policy_gradient
-import pylos_agents.actor_critic
+from pylos_agents.base import BatchGenerator
