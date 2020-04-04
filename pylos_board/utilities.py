@@ -31,5 +31,6 @@ def print_board(game_state):
 
 def print_layer(a):
     """ This function prints 4 layers of 4x4 arrays side by side. It's useful to monitor what the encoder is doing. """
+    a = np.round(a, 2)
     for j in range(4):
         print('\t'.join([np.array2string(a[i, j]) for i in range(4)]))

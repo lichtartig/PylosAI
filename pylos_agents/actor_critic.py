@@ -16,7 +16,7 @@ from pylos_encoder import Encoder
 class ActorCritic(Agent):
     """ This implements policy gradient, reinforcement learning AI."""
 
-    def __init__(self, eps=1e-3, conv_layers=4, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
+    def __init__(self, eps=0.05, conv_layers=4, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
                  no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0, weight_file = "actor_critic_weights.hdf5"):
         """ This constructor compiles the neural network model based on the specs seen above.
         The parameter eps encodes the clipping applied to probabilities to keep the process stochastic.
@@ -164,3 +164,9 @@ class ActorCritic(Agent):
         inputs = [l[None, :, :, :] for l in self.encoder.get_layers(game_state)] + [np.array([[game_state.stones_to_recover]])]
         recover, place, value = self.model.predict(inputs)
         return value
+
+    def GetPrediction(self, game_state):
+        inputs = [l[None, :, :, :] for l in self.encoder.get_layers(game_state)] + [
+            np.array([[game_state.stones_to_recover]])]
+        recover, place, value = self.model.predict(inputs)
+        return recover, place, value
