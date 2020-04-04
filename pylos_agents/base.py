@@ -8,7 +8,8 @@ sys.stderr = open(os.devnull, 'w')
 from keras.utils import Sequence
 sys.stderr = stderr
 from pylos_board.board import Move, GameState
-from pylos_board.utilities import off_grid, print_board
+from pylos_board.utilities import off_grid, print_board, print_layer
+import time
 
 class Agent:
     model = None
@@ -38,7 +39,8 @@ class Agent:
 
     def train(self, generator, verbose=0):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        self.model.fit_generator(generator=generator, verbose=verbose, use_multiprocessing=True, workers=4)
+        self.model.fit_generator(generator=generator, verbose=verbose)
+        #self.model.fit_generator(generator=generator, verbose=verbose, use_multiprocessing=True, workers=4)
 
     def save_weights(self):
         """ This saves the weights to a file."""
@@ -92,13 +94,17 @@ class BatchGenerator(Sequence):
                 cur_p = self.moves[i].current_position
             elif self.moves[i].is_pass:
                 new_p = random.choice(off_grid)
-                cur_p =  random.choice(off_grid)
+                #new_p = (3,3,3)
+                cur_p = random.choice(off_grid)
+                #cur_p = (3,3,3)
             elif self.moves[i].is_recover:
-                new_p =  random.choice(off_grid)
+                new_p = random.choice(off_grid)
+                #new_p = (3,3,3)
                 cur_p = self.moves[i].current_position
             else:
                 new_p = self.moves[i].new_position
-                cur_p =  random.choice(off_grid)
+                cur_p = random.choice(off_grid)
+                #cur_p = (3,3,3)
 
             rcv_tmp = np.zeros((4, 4, 4))
             plc_tmp = np.zeros((4, 4, 4))
@@ -109,6 +115,12 @@ class BatchGenerator(Sequence):
             recov_targets.append(rcv_tmp.flatten())
             place_targets.append(plc_tmp.flatten())
             value_targets.append(self.wins[i])
+
+            print_board(self.states[i])
+            print_layer(plc_tmp)
+            print("\n")
+            print_layer(rcv_tmp)
+            input()
 
         # turn the components of inp into numpy arrays
         inp = [np.array(i) for i in inp]
@@ -156,6 +168,9 @@ class PlayGames:
 
             # copy buffer to results
             states += state_buffer
+            for s in states:
+                print_board(s)
+                time.sleep(2)
             moves += move_buffer
             value_fct += value_fct_buffer
             # assign the labels which player won the game
@@ -169,11 +184,16 @@ class PlayGames:
                 wins += win_buffer[1:]
 
         # shuffle order
-        indices = list(range(len(moves)))
-        random.shuffle(indices)
-        states = [states[i] for i in indices]
-        wins = [wins[i] for i in indices]
-        moves = [moves[i] for i in indices]
-        value_fct = [value_fct[i] for i in indices]
+        #indices = list(range(len(moves)))
+        #random.shuffle(indices)
+        #states = [states[i] for i in indices]
+        #wins = [wins[i] for i in indices]
+        #moves = [moves[i] for i in indices]
+        #value_fct = [value_fct[i] for i in indices]
+
+        for i in range(len(states)):
+            print_board(states[i])
+            print(moves[i].current_position, "\t", moves[i].new_position)
+            time.sleep(2)
 
         return states, wins, moves, value_fct
