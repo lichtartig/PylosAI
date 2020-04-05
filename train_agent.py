@@ -1,6 +1,6 @@
 from pylos_agents import BatchGenerator
 from pylos_agents.base import PlayGames
-from pylos_agents import ActorCritic, PolicyGradient, SemiRandom
+from pylos_agents import ActorCritic, PolicyGradient, SemiRandom, Naive
 from pylos_encoder import Encoder
 import benchmark
 import logging, os

@@ -12,7 +12,6 @@ class SemiRandom(Agent):
         ret = []
         # regular moves
         if game_state.stones_to_recover == 0:
-            # TODO here I could test some of the feature planes to raise stones if possible
 
             top_to_bottom = bottom_to_top[:]
             top_to_bottom.reverse()

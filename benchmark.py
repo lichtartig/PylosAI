@@ -2,7 +2,7 @@
  the results. If it is called from another module, it will return the final stats. """
 import random
 from pylos_board.board import GameState
-from pylos_agents import Human, SemiRandom, PolicyGradient, ActorCritic
+from pylos_agents import Human, SemiRandom, PolicyGradient, ActorCritic, Naive
 
 def RunGame(agent1, agent2):
     # assign colors randomly
@@ -46,7 +46,7 @@ def Benchmark(agent1, agent2, n=100):
 
 if __name__ == "__main__":
     # decide which agents play
-    agent1 = PolicyGradient() # SemiRandom()  # Human()
+    agent1 = Naive() #PolicyGradient() # SemiRandom()  # Human()
     agent2 = SemiRandom()  # Human()
     win1, win2 = 0, 0
     for i in range(1000):

@@ -84,7 +84,7 @@ class BatchGenerator(Sequence):
         value_targets = []
         for i in range(len(self.moves)):
             feature_planes = self.encoder.get_layers(self.states[i]) + [
-                np.array([self.states[i].stones_to_recover])]
+                np.array([int(self.states[i].stones_to_recover > 0)])]
 
             for j in range(len(inp)):
                 inp[j].append(feature_planes[j])
@@ -94,17 +94,13 @@ class BatchGenerator(Sequence):
                 cur_p = self.moves[i].current_position
             elif self.moves[i].is_pass:
                 new_p = random.choice(off_grid)
-                #new_p = (3,3,3)
                 cur_p = random.choice(off_grid)
-                #cur_p = (3,3,3)
             elif self.moves[i].is_recover:
                 new_p = random.choice(off_grid)
-                #new_p = (3,3,3)
                 cur_p = self.moves[i].current_position
             else:
                 new_p = self.moves[i].new_position
                 cur_p = random.choice(off_grid)
-                #cur_p = (3,3,3)
 
             rcv_tmp = np.zeros((4, 4, 4))
             plc_tmp = np.zeros((4, 4, 4))
