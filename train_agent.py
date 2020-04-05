@@ -70,7 +70,6 @@ if __name__ == '__main__':
     logging.disable(logging.WARNING)
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-    # TODO Make a second version of SemiRandom that always fills up squares or raises stones if possible. This should make a better training adversary. Benchmark it against SemiRandom
     # TODO Write Tree search AI, let it play against ActorCritic (to remain stochastic) and use it as training data
 
     start = time.time()
