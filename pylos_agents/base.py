@@ -8,8 +8,7 @@ sys.stderr = open(os.devnull, 'w')
 from keras.utils import Sequence
 sys.stderr = stderr
 from pylos_board.board import Move, GameState
-from pylos_board.utilities import off_grid, print_board, print_layer
-import time
+from pylos_board.utilities import off_grid
 
 class Agent:
     model = None
@@ -39,8 +38,8 @@ class Agent:
 
     def train(self, generator, verbose=0):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        self.model.fit_generator(generator=generator, verbose=verbose)
         #self.model.fit_generator(generator=generator, verbose=verbose, use_multiprocessing=True, workers=4)
+        self.model.fit_generator(generator=generator, verbose=verbose)
 
     def save_weights(self):
         """ This saves the weights to a file."""
@@ -86,8 +85,9 @@ class BatchGenerator(Sequence):
         for i in range(len(self.moves)):
             feature_planes = self.encoder.get_layers(self.states[i]) + [
                 np.array([self.states[i].stones_to_recover])]
-            for i in range(len(inp)):
-                inp[i].append(feature_planes[i])
+
+            for j in range(len(inp)):
+                inp[j].append(feature_planes[j])
 
             if self.moves[i].is_raise:
                 new_p = self.moves[i].new_position
@@ -116,12 +116,6 @@ class BatchGenerator(Sequence):
             place_targets.append(plc_tmp.flatten())
             value_targets.append(self.wins[i])
 
-            print_board(self.states[i])
-            print_layer(plc_tmp)
-            print("\n")
-            print_layer(rcv_tmp)
-            input()
-
         # turn the components of inp into numpy arrays
         inp = [np.array(i) for i in inp]
 
@@ -148,52 +142,41 @@ class PlayGames:
         value_fct = []
 
         while len(states) < self.no_of_moves:
-            state_buffer = [GameState.new_game()]
-            move_buffer = []
-            value_fct_buffer = [self.agent1.ComputeValueFct(state_buffer[-1])]
+            states.append(GameState.new_game())
+            value_fct.append(self.agent1.ComputeValueFct(states[-1]))
             # assign colors randomly
             game_agents = [self.agent1, self.agent2]
             random.shuffle(game_agents)
             colors = dict(zip([1, -1], game_agents))
 
             # play a game
-            while state_buffer[-1].has_won() == False:
-                player = colors[state_buffer[-1].current_player.value]
-                next_move = player.next_move(state_buffer[-1])
+            counter = 1
+            while states[-1].has_won() == False:
+                player = colors[states[-1].current_player.value]
+                next_move = player.next_move(states[-1])
+                moves.append(next_move)
                 if next_move.is_resign:
                     break
-                move_buffer.append(next_move)
-                state_buffer.append(state_buffer[-1].apply_move(next_move))
-                value_fct_buffer.append(self.agent1.ComputeValueFct(state_buffer[-1]))
+                states.append(states[-1].apply_move(next_move))
+                value_fct.append(self.agent1.ComputeValueFct(states[-1]))
+                counter += 1
 
-            # copy buffer to results
-            states += state_buffer
-            for s in states:
-                print_board(s)
-                time.sleep(2)
-            moves += move_buffer
-            value_fct += value_fct_buffer
             # assign the labels which player won the game
-            if state_buffer[-1].has_won():
-                win_buffer = int(np.ceil(len(state_buffer)/2))*[-1, 1]
+            if states[-1].has_won():
+                win_buffer = int(np.ceil(counter/2))*[-1, 1]
             else:
-                win_buffer = int(np.ceil(len(state_buffer) / 2)) * [1, -1]
-            if len(win_buffer) == len(states):
+                win_buffer = int(np.ceil(counter/2))*[1, -1]
+            if len(win_buffer) == counter:
                 wins += win_buffer
             else:
                 wins += win_buffer[1:]
 
         # shuffle order
-        #indices = list(range(len(moves)))
-        #random.shuffle(indices)
-        #states = [states[i] for i in indices]
-        #wins = [wins[i] for i in indices]
-        #moves = [moves[i] for i in indices]
-        #value_fct = [value_fct[i] for i in indices]
-
-        for i in range(len(states)):
-            print_board(states[i])
-            print(moves[i].current_position, "\t", moves[i].new_position)
-            time.sleep(2)
+        indices = list(range(len(moves)))
+        random.shuffle(indices)
+        states = [states[i] for i in indices]
+        wins = [wins[i] for i in indices]
+        moves = [moves[i] for i in indices]
+        value_fct = [value_fct[i] for i in indices]
 
         return states, wins, moves, value_fct

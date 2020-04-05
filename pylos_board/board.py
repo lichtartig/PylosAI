@@ -1,4 +1,5 @@
 import enum
+import copy
 import numpy as np
 from pylos_board.utilities import bottom_to_top
 
@@ -12,11 +13,11 @@ class GameState():
     def apply_move(self, move):
         """ This function takes a Move-object as a parameter and returns a new game-state object corresponding to the
         next position. """
+        new_board = copy.deepcopy(self.board)
         if move.is_pass:
-            return GameState(board=self.board, current_player=self.current_player.next_player)
+            return GameState(board=new_board, current_player=self.current_player.next_player)
 
         elif move.is_recover:
-            new_board = self.board
             z, x, y = move.current_position
             new_board[z][x,y] = 0
             if self.stones_to_recover > 1:
@@ -26,7 +27,6 @@ class GameState():
             return GameState(board=new_board, current_player=next_player, stones_to_recover=self.stones_to_recover-1)
 
         elif move.is_raise:
-            new_board = self.board
             z, x, y = move.current_position
             new_board[z][x, y] = 0
             z, x, y = move.new_position
@@ -37,7 +37,6 @@ class GameState():
                 return GameState(board=new_board, current_player=self.current_player.next_player)
 
         else:
-            new_board = self.board
             z, x, y = move.new_position
             new_board[z][x, y] = self.current_player.value
             if self.completes_square(move.new_position, self.current_player):

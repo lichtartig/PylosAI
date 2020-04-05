@@ -32,7 +32,7 @@ def train_agent(agent1, agent2, verbose=0):
     else:
         value_fct = False
 
-    epoch_size = 2000
+    epoch_size = 20000
     encoder = Encoder()
     play_games = PlayGames(agent1=agent1, agent2=agent2, no_of_moves=epoch_size)
     # train the two agents against each other. Every time the trained agent improves, we update the opponent as well.
@@ -41,7 +41,6 @@ def train_agent(agent1, agent2, verbose=0):
 
     counter = 0
     epochs_wo_improvement = 0
-    saved = False
     while epochs_wo_improvement < 10:
         states, wins, moves, advantages = load_experience(counter, play_games)
         counter += 1
@@ -53,16 +52,12 @@ def train_agent(agent1, agent2, verbose=0):
         if verbose == 1:
             print("The agent won ", win1, " games of a total of ", win1 + win2, " against his previous version.")
         if win1 >= 65:
-            saved = True
             agent1.save_weights()
             # reload the weights to improve the strength
             agent2.load_weights()
             epochs_wo_improvement = 0
         else:
             epochs_wo_improvement += 1
-
-    if saved == False:
-        agent1.save_weights()
 
     # Reload agent to get the best saved weights.
     agent1.load_weights()
@@ -75,6 +70,7 @@ if __name__ == '__main__':
     logging.disable(logging.WARNING)
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+    # TODO Make a second version of SemiRandom that always fills up squares or raises stones if possible. This should make a better training adversary. Benchmark it against SemiRandom
     # TODO Write Tree search AI, let it play against ActorCritic (to remain stochastic) and use it as training data
 
     start = time.time()
