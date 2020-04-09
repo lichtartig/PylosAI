@@ -4,27 +4,6 @@ from pylos_agents import ActorCritic, PolicyGradient, SemiRandom, Naive
 from pylos_encoder import Encoder
 import benchmark
 import logging, os
-import time
-import pickle
-
-def load_experience(counter, play_games):
-    """ This function tries to load experience data from pickled files. If it doesn't succeed, it creates this experience
-    data itself and saves it."""
-    counter_str = "-"+ "0"*(2-len(str(counter))) + str(counter)
-    try:
-        states = pickle.load(open('pickled_states'+counter_str, 'rb'))
-        wins = pickle.load(open('pickled_wins'+counter_str, 'rb'))
-        moves = pickle.load(open('pickled_moves'+counter_str, 'rb'))
-        advantages = pickle.load(open('pickled_advantages'+counter_str, 'rb'))
-    except:
-        print("Generating more experience data.")
-        states, wins, moves, advantages = play_games.play_games()
-        pickle.dump(states, open('pickled_states'+counter_str, 'wb'))
-        pickle.dump(wins, open('pickled_wins'+counter_str, 'wb'))
-        pickle.dump(moves, open('pickled_moves'+counter_str, 'wb'))
-        pickle.dump(advantages, open('pickled_advantages'+counter_str, 'wb'))
-
-    return states, wins, moves, advantages
 
 def train_agent(agent1, agent2, verbose=0):
     if str(agent1) is "ActorCritic":
@@ -41,17 +20,20 @@ def train_agent(agent1, agent2, verbose=0):
 
     counter = 0
     epochs_wo_improvement = 0
-    while epochs_wo_improvement < 10:
-        states, wins, moves, advantages = load_experience(counter, play_games)
+    while epochs_wo_improvement < 5:
+        if verbose == 1:
+            print("Generating more experience data")
+        states, wins, moves, advantages = play_games.play_games()
         counter += 1
 
-        gen = BatchGenerator(agent1=agent1, agent2=agent2, encoder=encoder, states=states, wins=wins, moves=moves,
+        gen = BatchGenerator(encoder=encoder, states=states, wins=wins, moves=moves,
                              value_fct=advantages, epoch_size=epoch_size, output_includes_value_fct=value_fct)
         agent1.train(generator=gen, verbose=verbose)
         win1, win2 = benchmark.Benchmark(agent1, agent2)
         if verbose == 1:
-            print("The agent won ", win1, " games of a total of ", win1 + win2, " against his previous version.")
-        if win1 >= 65:
+            print("The agent won ", win1, " games of a total of ", win1 + win2, " against the " + str(agent2) + " AI.")
+        # This corresponds to a p-value of 3%
+        if win1 >= 60:
             agent1.save_weights()
             # reload the weights to improve the strength
             agent2.load_weights()
@@ -62,6 +44,7 @@ def train_agent(agent1, agent2, verbose=0):
     # Reload agent to get the best saved weights.
     agent1.load_weights()
     win1, win2 = benchmark.Benchmark(agent1, SemiRandom(), n=1000)
+    # 530 wins are a p-value of 3%
     print("Final benchmark: The agent won ", win1, " games of a total of ", win1 + win2,
           " against the SemiRandom agent.")
 
@@ -69,14 +52,35 @@ if __name__ == '__main__':
     # low verbosity
     logging.disable(logging.WARNING)
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    # agent1 = ActorCritic()
+    # agent2 = Naive()
 
-    # TODO Write Tree search AI, let it play against ActorCritic (to remain stochastic) and use it as training data
+    agent1 = PolicyGradient()
+    agent2 = PolicyGradient()
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("No change.")
 
-    start = time.time()
-    agent1 = ActorCritic(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
-    #agent1 = PolicyGradient(conv_layers=3, no_of_filters=16, no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0)
-    #agent2 = ActorCritic(conv_layers=c, no_of_filters=nof, no_dense_layers=ndl, dense_dim=dd, batch_norm=bn,
-    #                     dropout_rate=dr, weight_file=weight_file)
-    agent2 = SemiRandom()
-    train_agent(agent1=agent1, agent2=agent2, verbose=1)
-    print(str(round((time.time() - start) / 60)) + " min.")
+    agent1 = PolicyGradient(conv_layers=2)
+    agent2 = PolicyGradient(conv_layers=2)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("2 conv layers.")
+
+    agent1 = PolicyGradient(conv_layers=4)
+    agent2 = PolicyGradient(conv_layers=4)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("4 conv layers.")
+
+    agent1 = PolicyGradient(no_dense_layers=1)
+    agent2 = PolicyGradient(no_dense_layers=1)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("1 dense layer")
+
+    agent1 = PolicyGradient(no_dense_layers=2)
+    agent2 = PolicyGradient(no_dense_layers=2)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("2 dense layers")
+
+    agent1 = PolicyGradient(no_dense_layers=4)
+    agent2 = PolicyGradient(no_dense_layers=4)
+    train_agent(agent1=agent1, agent2=agent2, verbose=0)
+    print("4 dense layers")

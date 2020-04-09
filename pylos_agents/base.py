@@ -38,8 +38,7 @@ class Agent:
 
     def train(self, generator, verbose=0):
         """ This function takes a generator suitable for keras and trains the neural net on it. """
-        #self.model.fit_generator(generator=generator, verbose=verbose, use_multiprocessing=True, workers=4)
-        self.model.fit_generator(generator=generator, verbose=verbose)
+        self.model.fit_generator(generator=generator, verbose=verbose, use_multiprocessing=True, workers=4)
 
     def save_weights(self):
         """ This saves the weights to a file."""
@@ -60,9 +59,7 @@ class Agent:
 class BatchGenerator(Sequence):
     ''' This class serves as a data generator for keras s.t. we don't have to load all images at once.
     a game is about 40 moves. '''
-    def __init__(self, agent1, agent2, encoder, states, wins, moves, value_fct, batch_size=1000, epoch_size=40000, output_includes_value_fct=True):
-        self.agent1 = agent1
-        self.agent2 = agent2
+    def __init__(self, encoder, states, wins, moves, value_fct, batch_size=1000, epoch_size=40000, output_includes_value_fct=True):
         self.batch_size = batch_size
         self.epoch_size = epoch_size
         self.encoder = encoder

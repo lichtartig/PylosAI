@@ -16,8 +16,8 @@ from pylos_encoder import Encoder
 class ActorCritic(Agent):
     """ This implements policy gradient, reinforcement learning AI."""
 
-    def __init__(self, eps=0.05, conv_layers=4, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
-                 no_dense_layers=1, dense_dim=64, batch_norm=False, dropout_rate=0.0, weight_file = "actor_critic_weights.hdf5"):
+    def __init__(self, eps=1e-3, conv_layers=1, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
+                 no_dense_layers=0, dense_dim=64, batch_norm=False, dropout_rate=0.0, weight_file = "actor_critic_weights.hdf5"):
         """ This constructor compiles the neural network model based on the specs seen above.
         The parameter eps encodes the clipping applied to probabilities to keep the process stochastic.
         probabilities can be as low as (eps) and as high as (1-eps)"""
@@ -50,8 +50,8 @@ class ActorCritic(Agent):
         for i in range(self.conv_layers):
             nxt_layer = []
             for l in layers[-1]:
-                tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu')(l)
-                if i == self.conv_layers-self.pooling_layers: tmp = MaxPooling2D(pool_size=self.pool_size)(tmp)
+                tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu', data_format='channels_last')(l)
+                if i >= 2 + self.conv_layers-self.pooling_layers: tmp = MaxPooling2D(pool_size=self.pool_size)(tmp)
                 if self.batch_norm: tmp = BatchNormalization()(tmp)
                 if i == self.conv_layers-1: tmp = Flatten()(tmp)
                 nxt_layer.append(tmp)
@@ -86,7 +86,7 @@ class ActorCritic(Agent):
         optimizer = Adadelta()
         self.model = Model(inputs=inputs, outputs=[recover, place, value])
         self.model.compile(optimizer=optimizer,
-                      loss=['categorical_crossentropy', 'categorical_crossentropy', 'mse'], loss_weights=[0.5, 0.5, 1])
+                      loss=['categorical_crossentropy', 'categorical_crossentropy', 'mse'], loss_weights=[0.5, 0.5, 2])
 
         # load weights if possible
         try:

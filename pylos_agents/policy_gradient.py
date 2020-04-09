@@ -17,7 +17,7 @@ class PolicyGradient(Agent):
     """ This implements policy gradient, reinforcement learning AI."""
 
     def __init__(self, eps=1e-3, conv_layers=1, no_of_filters=8, kernel_size=(2, 2), pool_size=(2, 2), pooling_layers=2,
-                 no_dense_layers=0, dense_dim=128, batch_norm=True, dropout_rate=0.0, weight_file = "policy_gradient_weights.hdf5"):
+                 no_dense_layers=0, dense_dim=64, batch_norm=False, dropout_rate=0.0, weight_file = "policy_gradient_weights.hdf5"):
         """ This constructor compiles the neural network model based on the specs seen above.
         The parameter eps encodes the clipping applied to probabilities to keep the process stochastic.
         probabilities can be as low as (eps) and as high as (1-eps)"""
@@ -50,7 +50,7 @@ class PolicyGradient(Agent):
         for i in range(self.conv_layers):
             nxt_layer = []
             for l in layers[-1]:
-                tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu')(l)
+                tmp = Conv2D(filters=self.no_of_filters, kernel_size=self.kernel_size, padding='same', activation='relu', data_format='channels_last')(l)
                 if i == self.conv_layers-self.pooling_layers: tmp = MaxPooling2D(pool_size=self.pool_size)(tmp)
                 if self.batch_norm: tmp = BatchNormalization()(tmp)
                 if i == self.conv_layers-1: tmp = Flatten()(tmp)
@@ -69,12 +69,13 @@ class PolicyGradient(Agent):
             x = Dense(self.dense_dim, activation='relu')(x)
             if self.dropout_rate > 0.0: x = Dropout(rate=self.dropout_rate)(x)
 
-
         # Output encodes the stones that we take out either to raise a stone or to recover after a square
         # completion. If the point lies outside of the
-        recover = Dense(4**3, activation='softmax', name='recover')(x)
+        rdense = Dense(self.dense_dim, activation='relu')(x)
+        recover = Dense(64, activation='softmax', name='recover')(rdense)
         # this output encodes the stones we place
-        place = Dense(4**3, activation='softmax', name='place')(x)
+        pdense = Dense(self.dense_dim, activation='relu')(x)
+        place = Dense(64, activation='softmax', name='place')(pdense)
 
 
         # compile the model

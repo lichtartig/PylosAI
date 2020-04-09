@@ -74,7 +74,7 @@ class Encoder():
         Pylos-pyramids 4 layers and returns them in cubic form (4,4,4). It fills up empty positions w/ -1. """
         # fill up a layer w/ -1 to match the dimensions 4x4
         fill_up = lambda x: np.concatenate(
-            (np.concatenate((x, np.full((4 - len(x), len(x)), -2))), np.full((4, 4 - len(x)), -2)), axis=1)
+            (np.concatenate((x, np.full((4 - len(x), len(x)), 0))), np.full((4, 4 - len(x)), 0)), axis=1)
 
         return np.stack((M[0], fill_up(M[1]), fill_up(M[2]), fill_up(M[3])))
 
